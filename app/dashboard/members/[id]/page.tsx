@@ -4,6 +4,7 @@ import { Header } from "@/components/dashboard/Header";
 import { Card, CardTitle, Badge, Button } from "@/components/ui";
 import { MemberStatusActions } from "@/components/dashboard/MemberStatusActions";
 import { PaymentsCard } from "@/components/dashboard/PaymentsCard";
+import { DirectDebitSetup } from "@/components/dashboard/DirectDebitSetup";
 import { formatDate, formatCurrency, formatBillingIntervalSuffix } from "@/utils";
 import type { MemberStatus } from "@/types";
 
@@ -136,6 +137,7 @@ export default async function MemberDetailPage({
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" className="w-full mt-3">Change plan</Button>
+                  <DirectDebitSetup memberId={member.id} hasMandate={!!member.gc_mandate_id} />
                 </>
               ) : (
                 <div className="mt-4 flex flex-col items-center justify-center py-6 text-center gap-2">
