@@ -1,4 +1,4 @@
-import { getGym, getDashboardStats, getRecentMembers } from "@/lib/queries";
+import { getGym, getDashboardStats, getRecentMembers, getFailedPaymentAlerts } from "@/lib/queries";
 import { Header } from "@/components/dashboard/Header";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { Card, CardHeader, CardTitle, Badge } from "@/components/ui";
@@ -15,9 +15,10 @@ const statusVariant: Record<MemberStatus, "success" | "warning" | "default" | "d
 
 export default async function DashboardPage() {
   const gym = await getGym();
-  const [stats, recentMembers] = await Promise.all([
+  const [stats, recentMembers, failedPaymentAlerts] = await Promise.all([
     getDashboardStats(gym.id),
     getRecentMembers(gym.id, 5),
+    getFailedPaymentAlerts(gym.id),
   ]);
 
   const retentionRate =
@@ -167,34 +168,41 @@ export default async function DashboardPage() {
 
           {/* Right column */}
           <div className="space-y-5">
-            {/* Alerts panel */}
+            {/* Alerts panel — failed GoCardless payments this billing window.
+                Just a signal for the owner to follow up manually; no send
+                button here on purpose. */}
             <Card padding="none">
               <CardHeader className="px-5 pt-5 pb-4">
                 <CardTitle description="Needs attention">Alerts</CardTitle>
-                {stats.failedPayments > 0 && (
-                  <Badge variant="danger">{stats.failedPayments}</Badge>
+                {failedPaymentAlerts.length > 0 && (
+                  <Badge variant="danger">{failedPaymentAlerts.length}</Badge>
                 )}
               </CardHeader>
 
               <div className="p-3 space-y-1">
-                {stats.failedPayments > 0 ? (
-                  <a
-                    href="/dashboard/members?status=paused"
-                    className="flex gap-3 px-3 py-3 rounded-[6px] hover:bg-[rgba(255,255,255,0.02)] transition-colors duration-150 cursor-pointer group"
-                  >
-                    <span className="w-5 h-5 rounded-full bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className="text-[#ef4444]">
-                        <path d="M8 5v3M8 10.5v.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.25" />
-                      </svg>
-                    </span>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-[#f5f5f5] leading-snug">
-                        {stats.failedPayments} member{stats.failedPayments > 1 ? "s" : ""} with failed payments
+                {failedPaymentAlerts.length > 0 ? (
+                  failedPaymentAlerts.map((alert) => (
+                    <a
+                      key={alert.id}
+                      href={alert.memberId ? `/dashboard/members/${alert.memberId}` : "/dashboard/members"}
+                      className="flex gap-3 px-3 py-3 rounded-[6px] hover:bg-[rgba(255,255,255,0.02)] transition-colors duration-150 cursor-pointer group"
+                    >
+                      <span className="w-5 h-5 rounded-full bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" className="text-[#ef4444]">
+                          <path d="M8 5v3M8 10.5v.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.25" />
+                        </svg>
                       </span>
-                      <span className="text-[10px] text-[#444444]">View affected members →</span>
-                    </div>
-                  </a>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-xs text-[#f5f5f5] leading-snug">
+                          {alert.memberName} — {formatCurrency(alert.amount)} failed
+                        </span>
+                        <span className="text-[10px] text-[#444444]">
+                          {formatDate(alert.failedAt, { day: "numeric", month: "short" })}
+                        </span>
+                      </div>
+                    </a>
+                  ))
                 ) : (
                   <div className="flex items-center gap-2 px-3 py-3">
                     <span className="w-5 h-5 rounded-full bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] flex items-center justify-center flex-shrink-0">

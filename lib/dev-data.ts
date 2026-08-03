@@ -1,4 +1,4 @@
-import type { Gym, Plan, MemberWithPlan, ContractWithMember, DashboardStats, Payment } from "@/types";
+import type { Gym, Plan, MemberWithPlan, ContractWithMember, DashboardStats, Payment, FailedPaymentAlert } from "@/types";
 
 export const DEV_GYM: Gym = {
   id: "dev-gym-id",
@@ -137,8 +137,18 @@ export const DEV_STATS: DashboardStats = {
   totalMembers: 43,
   activeMembers: 38,
   monthlyRevenue: 3382,
-  failedPayments: 2,
+  failedPayments: 1,
 };
+
+export const DEV_FAILED_PAYMENT_ALERTS: FailedPaymentAlert[] = [
+  {
+    id: "pay-failed-1",
+    memberId: "mem-3",
+    memberName: "Aroha Ngata",
+    amount: 15,
+    failedAt: "2025-06-10T08:00:00Z",
+  },
+];
 
 export const DEV_CONTRACTS: ContractWithMember[] = [
   {

@@ -1,6 +1,6 @@
 import { createServerSupabaseClient } from "./supabase";
 import { redirect } from "next/navigation";
-import type { Gym, Member, Plan, Contract, Payment, MemberWithPlan, ContractWithMember, DashboardStats } from "@/types";
+import type { Gym, Member, Plan, Contract, Payment, MemberWithPlan, ContractWithMember, DashboardStats, FailedPaymentAlert } from "@/types";
 import { monthlyEquivalentPrice } from "@/utils";
 import * as DEV from "./dev-data";
 
@@ -36,9 +36,21 @@ export async function getGym(): Promise<Gym> {
 
 // ── Dashboard stats ───────────────────────────────────────────────────────────
 
+// UTC calendar-month boundaries for "this billing window" — good enough for
+// a single-tenant pilot; revisit if billing windows ever need to be
+// per-member (e.g. anniversary billing) rather than calendar-month.
+function currentMonthRange(): { start: string; end: string } {
+  const now = new Date();
+  return {
+    start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString(),
+    end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString(),
+  };
+}
+
 export async function getDashboardStats(gymId: string): Promise<DashboardStats> {
   if (DEV_BYPASS) return DEV.DEV_STATS;
   const supabase = await createServerSupabaseClient();
+  const { start: monthStart, end: monthEnd } = currentMonthRange();
 
   const [totalRes, activeRes] = await Promise.all([
     supabase
@@ -65,10 +77,6 @@ export async function getDashboardStats(gymId: string): Promise<DashboardStats> 
   let monthlyRevenue: number;
 
   if (paymentsRecorded && paymentsRecorded > 0) {
-    const now = new Date();
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
-    const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
-
     const { data: monthPayments } = await supabase
       .from("payments")
       .select("amount")
@@ -95,11 +103,20 @@ export async function getDashboardStats(gymId: string): Promise<DashboardStats> 
     }, 0);
   }
 
+  // Failed Payments: actual failed GoCardless payments this billing window,
+  // not a proxy. Previously this counted members with status='paused',
+  // which overclaimed — a member can be paused manually (put on hold, no
+  // failure involved) with nothing to do with a payment ever failing.
+  // paid_at is never set on a failed payment (nothing was ever paid), so
+  // this windows on created_at — when the webhook recorded the failure.
   const { count: failedCount } = await supabase
-    .from("members")
+    .from("payments")
     .select("id", { count: "exact", head: true })
     .eq("gym_id", gymId)
-    .eq("status", "paused");
+    .eq("provider", "gocardless")
+    .eq("status", "failed")
+    .gte("created_at", monthStart)
+    .lt("created_at", monthEnd);
 
   return {
     totalMembers: totalRes.count ?? 0,
@@ -107,6 +124,31 @@ export async function getDashboardStats(gymId: string): Promise<DashboardStats> 
     monthlyRevenue,
     failedPayments: failedCount ?? 0,
   };
+}
+
+export async function getFailedPaymentAlerts(gymId: string): Promise<FailedPaymentAlert[]> {
+  if (DEV_BYPASS) return DEV.DEV_FAILED_PAYMENT_ALERTS;
+  const supabase = await createServerSupabaseClient();
+  const { start, end } = currentMonthRange();
+
+  const { data } = await supabase
+    .from("payments")
+    .select("id, amount, created_at, member:members(id, first_name, last_name)")
+    .eq("gym_id", gymId)
+    .eq("provider", "gocardless")
+    .eq("status", "failed")
+    .gte("created_at", start)
+    .lt("created_at", end)
+    .order("created_at", { ascending: false });
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((p: any) => ({
+    id: p.id,
+    memberId: p.member?.id ?? null,
+    memberName: p.member ? `${p.member.first_name} ${p.member.last_name}` : "Unknown member",
+    amount: p.amount,
+    failedAt: p.created_at,
+  }));
 }
 
 // ── Members ───────────────────────────────────────────────────────────────────

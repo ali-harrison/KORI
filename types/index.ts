@@ -124,6 +124,17 @@ export interface DashboardStats {
   failedPayments: number;
 }
 
+// Owner-facing "needs attention" signal — a failed GoCardless payment within
+// the current billing window. Deliberately just data for a list, not an
+// action: the owner follows up manually (see DirectDebitSetup / dashboard).
+export interface FailedPaymentAlert {
+  id: string;
+  memberId: string | null;
+  memberName: string;
+  amount: number;
+  failedAt: string;
+}
+
 // ── Form types ───────────────────────────────────────────────────────────────
 
 export type CreatePlanInput =
