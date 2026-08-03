@@ -110,6 +110,7 @@ export type Database = {
           type: string;
           status: string;
           note: string | null;
+          gc_event_id: string | null;
           paid_at: string | null;
           created_at: string;
         };
@@ -125,6 +126,7 @@ export type Database = {
           type: string;
           status?: string;
           note?: string | null;
+          gc_event_id?: string | null;
           paid_at?: string | null;
           created_at?: string;
         };
@@ -140,6 +142,7 @@ export type Database = {
           type?: string;
           status?: string;
           note?: string | null;
+          gc_event_id?: string | null;
           paid_at?: string | null;
           created_at?: string;
         };

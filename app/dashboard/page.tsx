@@ -227,9 +227,9 @@ export default async function DashboardPage() {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#888888]">Stripe Connect</span>
-                <Badge variant={gym.stripe_onboarding_complete ? "success" : "warning"} dot>
-                  {gym.stripe_onboarding_complete ? "Connected" : "Setup needed"}
+                <span className="text-xs text-[#888888]">GoCardless</span>
+                <Badge variant={gym.gc_organisation_id ? "success" : "warning"} dot>
+                  {gym.gc_organisation_id ? "Connected" : "Setup needed"}
                 </Badge>
               </div>
             </div>

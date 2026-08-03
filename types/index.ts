@@ -100,6 +100,7 @@ export interface Payment {
   type: PaymentType;
   status: PaymentStatus;
   note: string | null;
+  gc_event_id: string | null;
   paid_at: string | null;
   created_at: string;
 }

@@ -94,8 +94,8 @@ export default async function MemberDetailPage({
                       : "—",
                   },
                   {
-                    label: "Stripe",
-                    value: member.stripe_subscription_id ? "Connected" : "Not linked",
+                    label: "Direct debit",
+                    value: member.gc_mandate_id ? "Mandate active" : "Not set up",
                   },
                 ].map((item) => (
                   <div key={item.label} className="flex flex-col gap-1">

@@ -5,7 +5,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { MemberStatus } from "@/types";
 
-export async function updateMemberStatus(memberId: string, gymId: string, status: MemberStatus) {
+export async function updateMemberStatus(
+  memberId: string,
+  gymId: string,
+  status: MemberStatus
+): Promise<{ error: string } | { success: true }> {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
@@ -24,7 +28,10 @@ export async function updateMemberStatus(memberId: string, gymId: string, status
   return { success: true };
 }
 
-export async function createMember(gymId: string, formData: FormData) {
+export async function createMember(
+  gymId: string,
+  formData: FormData
+): Promise<{ error: string } | { success: true }> {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
@@ -39,16 +46,10 @@ export async function createMember(gymId: string, formData: FormData) {
     return { error: "First name, last name, and email are required" };
   }
 
-  // Check for duplicate email within this gym
-  const { data: existing } = await supabase
-    .from("members")
-    .select("id")
-    .eq("gym_id", gymId)
-    .eq("email", email)
-    .single();
-
-  if (existing) return { error: "A member with this email already exists" };
-
+  // Duplicate email within a gym is enforced by idx_members_gym_email_unique
+  // (case-insensitive, migration 20240005) — insert directly and translate
+  // the unique-violation error rather than pre-checking, which was racy
+  // under concurrent submits.
   const { error } = await supabase.from("members").insert({
     gym_id: gymId,
     first_name,
@@ -60,7 +61,12 @@ export async function createMember(gymId: string, formData: FormData) {
     start_date: new Date().toISOString().split("T")[0],
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "A member with this email already exists" };
+    }
+    return { error: error.message };
+  }
 
   revalidatePath("/dashboard/members");
   revalidatePath("/dashboard");

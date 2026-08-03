@@ -171,19 +171,19 @@ export const DEV_PAYMENTS: Payment[] = [
   {
     id: "pay-1", gym_id: "dev-gym-id", member_id: "mem-1", plan_id: "plan-weekly",
     amount: 18, currency: "NZD", provider: "manual", provider_payment_id: null,
-    type: "one_off", status: "succeeded", note: "Cash",
+    type: "one_off", status: "succeeded", note: "Cash", gc_event_id: null,
     paid_at: "2025-06-13T00:00:00Z", created_at: "2025-06-13T09:00:00Z",
   },
   {
     id: "pay-2", gym_id: "dev-gym-id", member_id: "mem-1", plan_id: "plan-weekly",
     amount: 18, currency: "NZD", provider: "manual", provider_payment_id: null,
-    type: "one_off", status: "succeeded", note: "Cash",
+    type: "one_off", status: "succeeded", note: "Cash", gc_event_id: null,
     paid_at: "2025-06-06T00:00:00Z", created_at: "2025-06-06T09:00:00Z",
   },
   {
     id: "pay-3", gym_id: "dev-gym-id", member_id: "mem-2", plan_id: "plan-pif-12mo",
     amount: 799, currency: "NZD", provider: "manual", provider_payment_id: null,
-    type: "one_off", status: "succeeded", note: "Bank transfer ref #4471",
+    type: "one_off", status: "succeeded", note: "Bank transfer ref #4471", gc_event_id: null,
     paid_at: "2025-02-01T00:00:00Z", created_at: "2025-02-01T12:00:00Z",
   },
 ];

@@ -25,7 +25,7 @@ export function AddMemberModal({ open, onClose, gymId, plans }: AddMemberModalPr
 
     startTransition(async () => {
       const result = await createMember(gymId, formData);
-      if (result?.error) {
+      if ("error" in result) {
         setError(result.error);
       } else {
         onClose();

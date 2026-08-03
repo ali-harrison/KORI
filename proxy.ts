@@ -46,7 +46,15 @@ export async function proxy(request: NextRequest) {
   // Skip middleware for API routes
   if (isApiRoute) return supabaseResponse;
 
-  // Unauthenticated → login (except auth + portal routes)
+  // Single-tenant pilot: there's no member-facing auth or session yet, so
+  // the portal is just an unreachable hardcoded mock. Redirect rather than
+  // let anyone load it. Reversible — this is the only line standing between
+  // /portal and being live again once member auth ships.
+  if (isPortalRoute) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  // Unauthenticated → login (except auth routes)
   if (!user && (isDashboardRoute || isOnboarding)) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
@@ -56,16 +64,21 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Dashboard routes (except onboarding) → check gym exists
-  if (user && isDashboardRoute) {
+  // Dashboard routes → check the user's gym exists (else send to onboarding).
+  // Onboarding → check the reverse (else an already-onboarded owner could
+  // create a second gym for themselves by just revisiting the page).
+  if (user && (isDashboardRoute || isOnboarding)) {
     const { data: gym } = await supabase
       .from("gyms")
       .select("id")
       .eq("owner_id", user.id)
       .single();
 
-    if (!gym) {
+    if (isDashboardRoute && !gym) {
       return NextResponse.redirect(new URL("/onboarding", request.url));
+    }
+    if (isOnboarding && gym) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
 
