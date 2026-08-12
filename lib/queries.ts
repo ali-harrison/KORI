@@ -9,7 +9,11 @@ import * as DEV from "./dev-data";
 
 // Gated on NODE_ENV so this can never activate in a production build/start,
 // even if DEV_BYPASS=true leaks into a production environment by mistake.
-const DEV_BYPASS = process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true";
+// Exported: app/actions/contracts.ts and app/actions/reminders.ts need it
+// to skip the actual Resend network call while still exercising the rest
+// of their logic against dev fixtures (see those files for why only the
+// email side-effect is guarded, not the Supabase write).
+export const DEV_BYPASS = process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true";
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
@@ -136,7 +140,7 @@ export async function getFailedPaymentAlerts(gymId: string): Promise<FailedPayme
 
   const { data } = await supabase
     .from("payments")
-    .select("id, amount, created_at, member:members(id, first_name, last_name)")
+    .select("id, amount, created_at, member:members(id, first_name, last_name, email)")
     .eq("gym_id", gymId)
     .eq("provider", "gocardless")
     .eq("status", "failed")
@@ -149,6 +153,7 @@ export async function getFailedPaymentAlerts(gymId: string): Promise<FailedPayme
     id: p.id,
     memberId: p.member?.id ?? null,
     memberName: p.member ? `${p.member.first_name} ${p.member.last_name}` : "Unknown member",
+    memberEmail: p.member?.email ?? null,
     amount: p.amount,
     failedAt: p.created_at,
   }));

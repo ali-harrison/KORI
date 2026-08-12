@@ -19,6 +19,9 @@ export type Database = {
           gc_organisation_id: string | null;
           gc_access_token: string | null;
           subscription_status: string;
+          contract_template: string;
+          overdue_email_subject: string;
+          overdue_email_body: string;
           created_at: string;
         };
         Insert: {
@@ -35,6 +38,9 @@ export type Database = {
           gc_organisation_id?: string | null;
           gc_access_token?: string | null;
           subscription_status?: string;
+          contract_template?: string;
+          overdue_email_subject?: string;
+          overdue_email_body?: string;
           created_at?: string;
         };
         Update: {
@@ -51,6 +57,9 @@ export type Database = {
           gc_organisation_id?: string | null;
           gc_access_token?: string | null;
           subscription_status?: string;
+          contract_template?: string;
+          overdue_email_subject?: string;
+          overdue_email_body?: string;
           created_at?: string;
         };
         Relationships: [];
@@ -226,6 +235,7 @@ export type Database = {
           signed_at: string | null;
           pdf_url: string | null;
           status: string;
+          last_sent_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -236,6 +246,7 @@ export type Database = {
           signed_at?: string | null;
           pdf_url?: string | null;
           status?: string;
+          last_sent_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -246,6 +257,7 @@ export type Database = {
           signed_at?: string | null;
           pdf_url?: string | null;
           status?: string;
+          last_sent_at?: string | null;
           created_at?: string;
         };
         Relationships: [];

@@ -5,7 +5,48 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY!);
 }
 
-const FROM = "KORI/GYM <noreply@kori.gym>";
+// TODO: kori.gym needs to be a verified sending domain in the Resend
+// account for this to actually deliver — not something fixable from code.
+const FROM = "kori/os <noreply@kori.gym>";
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// Light-background branded shell — inline styles only, since email clients
+// strip <style> tags. bodyText is plain text (already token-rendered by
+// lib/templates.ts); blank-line-separated paragraphs become <p>s, single
+// newlines become <br>. Escaped as a whole after merging so nothing in the
+// gym's own template text or a member's name can break the markup.
+function renderEmailShell({
+  gymName,
+  logoUrl,
+  bodyText,
+}: {
+  gymName: string;
+  logoUrl: string | null;
+  bodyText: string;
+}): string {
+  const paragraphs = bodyText
+    .split(/\n{2,}/)
+    .map(
+      (para) =>
+        `<p style="margin:0 0 14px;color:#222;font-size:14px;line-height:1.6;">${escapeHtml(para).replace(/\n/g, "<br>")}</p>`
+    )
+    .join("");
+
+  const header = logoUrl
+    ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(gymName)}" style="max-height:48px;max-width:200px;display:block;margin:0 0 20px;">`
+    : `<div style="font-size:16px;font-weight:600;color:#111;margin:0 0 20px;">${escapeHtml(gymName)}</div>`;
+
+  return `
+    <div style="max-width:520px;margin:0 auto;padding:32px 24px;font-family:-apple-system,Helvetica,Arial,sans-serif;background:#fff;">
+      ${header}
+      ${paragraphs}
+      <p style="margin:24px 0 0;font-size:12px;color:#999;">Sent by ${escapeHtml(gymName)} via kori/os.</p>
+    </div>
+  `;
+}
 
 // ── Welcome email sent to a new member after signup ──────────────────────────
 export async function sendWelcomeEmail({
@@ -35,58 +76,50 @@ export async function sendWelcomeEmail({
   });
 }
 
-// ── Contract ready to sign ───────────────────────────────────────────────────
+// ── Membership contract — rendered from the gym's own contract_template ──────
 export async function sendContractEmail({
   to,
-  memberName,
+  replyTo,
   gymName,
-  signUrl,
+  logoUrl,
+  bodyText,
 }: {
   to: string;
-  memberName: string;
+  replyTo: string | null;
   gymName: string;
-  signUrl: string;
+  logoUrl: string | null;
+  bodyText: string;
 }) {
   return getResend().emails.send({
     from: FROM,
     to,
+    replyTo: replyTo ?? undefined,
     subject: `Your membership agreement — ${gymName}`,
-    html: `
-      <p>Hi ${memberName},</p>
-      <p>Your membership agreement with <strong>${gymName}</strong> is ready to sign.</p>
-      <p>
-        <a href="${signUrl}" style="background:#e8ff47;color:#0c0c0c;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">
-          Review &amp; Sign
-        </a>
-      </p>
-    `,
+    html: renderEmailShell({ gymName, logoUrl, bodyText }),
   });
 }
 
-// ── Payment failed notification ──────────────────────────────────────────────
-export async function sendPaymentFailedEmail({
+// ── Overdue payment reminder — subject + body both owner-edited ─────────────
+export async function sendOverdueReminderEmail({
   to,
-  memberName,
+  replyTo,
   gymName,
-  updateCardUrl,
+  logoUrl,
+  subject,
+  bodyText,
 }: {
   to: string;
-  memberName: string;
+  replyTo: string | null;
   gymName: string;
-  updateCardUrl: string;
+  logoUrl: string | null;
+  subject: string;
+  bodyText: string;
 }) {
   return getResend().emails.send({
     from: FROM,
     to,
-    subject: `Payment failed — action required`,
-    html: `
-      <p>Hi ${memberName},</p>
-      <p>Your payment to <strong>${gymName}</strong> failed. Please update your payment details to keep your membership active.</p>
-      <p>
-        <a href="${updateCardUrl}" style="background:#ef4444;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">
-          Update Payment Method
-        </a>
-      </p>
-    `,
+    replyTo: replyTo ?? undefined,
+    subject,
+    html: renderEmailShell({ gymName, logoUrl, bodyText }),
   });
 }

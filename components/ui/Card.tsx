@@ -6,6 +6,7 @@ interface CardProps {
   padding?: "none" | "sm" | "md" | "lg";
   hoverable?: boolean;
   onClick?: () => void;
+  id?: string;
 }
 
 const paddingStyles = {
@@ -21,11 +22,13 @@ export function Card({
   padding = "md",
   hoverable = false,
   onClick,
+  id,
 }: CardProps) {
   const Tag = onClick ? "button" : "div";
 
   return (
     <Tag
+      id={id}
       onClick={onClick}
       className={cn(
         "relative rounded-[10px]",

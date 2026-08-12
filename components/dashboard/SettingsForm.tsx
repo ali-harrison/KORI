@@ -3,8 +3,8 @@
 import { useState, useTransition, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardHeader, CardTitle, Badge, Button } from "@/components/ui";
-import { Input } from "@/components/ui/Input";
-import { updateGym } from "@/app/actions/gym";
+import { Input, Textarea } from "@/components/ui/Input";
+import { updateGym, updateContractTemplate, updateReminderTemplate } from "@/app/actions/gym";
 import type { Gym } from "@/types";
 
 interface Props {
@@ -16,6 +16,14 @@ export function SettingsForm({ gym }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [gcNotice, setGcNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const [contractSaved, setContractSaved] = useState(false);
+  const [contractError, setContractError] = useState<string | null>(null);
+  const [isContractPending, startContractTransition] = useTransition();
+
+  const [reminderSaved, setReminderSaved] = useState(false);
+  const [reminderError, setReminderError] = useState<string | null>(null);
+  const [isReminderPending, startReminderTransition] = useTransition();
 
   const searchParams = useSearchParams();
 
@@ -46,6 +54,40 @@ export function SettingsForm({ gym }: Props) {
       } else {
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
+      }
+    });
+  }
+
+  function handleContractSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setContractSaved(false);
+    setContractError(null);
+    const formData = new FormData(e.currentTarget);
+
+    startContractTransition(async () => {
+      const result = await updateContractTemplate(gym.id, formData);
+      if (result?.error) {
+        setContractError(result.error);
+      } else {
+        setContractSaved(true);
+        setTimeout(() => setContractSaved(false), 2500);
+      }
+    });
+  }
+
+  function handleReminderSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setReminderSaved(false);
+    setReminderError(null);
+    const formData = new FormData(e.currentTarget);
+
+    startReminderTransition(async () => {
+      const result = await updateReminderTemplate(gym.id, formData);
+      if (result?.error) {
+        setReminderError(result.error);
+      } else {
+        setReminderSaved(true);
+        setTimeout(() => setReminderSaved(false), 2500);
       }
     });
   }
@@ -81,6 +123,13 @@ export function SettingsForm({ gym }: Props) {
             <Input label="Phone" name="phone" defaultValue={gym.phone ?? ""} />
             <Input label="Email" name="email" type="email" defaultValue={gym.email ?? ""} />
           </div>
+          <Input
+            label="Logo URL"
+            name="logo_url"
+            defaultValue={gym.logo_url ?? ""}
+            placeholder="https://…"
+            hint="Paste a link to your logo — shown on contract and reminder emails."
+          />
           {error && <p className="text-xs text-[#cf9a90]">{error}</p>}
           <div className="flex justify-end pt-1">
             <Button variant="primary" size="sm" type="submit" loading={isPending}>
@@ -145,6 +194,70 @@ export function SettingsForm({ gym }: Props) {
             )}
           </div>
         </div>
+      </Card>
+
+      {/* Contract template */}
+      <Card id="contract-template">
+        <CardHeader className="pb-5 mb-5">
+          <CardTitle description="Sent when you send a contract to a member">
+            Contract template
+          </CardTitle>
+          {contractSaved && (
+            <span className="text-xs text-[#5fc9a4] flex items-center gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Saved
+            </span>
+          )}
+        </CardHeader>
+        <form onSubmit={handleContractSubmit} className="space-y-3">
+          <Textarea
+            name="contract_template"
+            defaultValue={gym.contract_template}
+            rows={7}
+            hint="Available: {{member_name}}, {{gym_name}}, {{plan_name}}, {{amount}}, {{start_date}}"
+          />
+          {contractError && <p className="text-xs text-[#cf9a90]">{contractError}</p>}
+          <div className="flex justify-end pt-1">
+            <Button variant="primary" size="sm" type="submit" loading={isContractPending}>
+              Save template
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      {/* Overdue payment reminder */}
+      <Card>
+        <CardHeader className="pb-5 mb-5">
+          <CardTitle description="Sent when you send a reminder to a member with a failed payment">
+            Overdue payment reminder
+          </CardTitle>
+          {reminderSaved && (
+            <span className="text-xs text-[#5fc9a4] flex items-center gap-1.5">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Saved
+            </span>
+          )}
+        </CardHeader>
+        <form onSubmit={handleReminderSubmit} className="space-y-3">
+          <Input label="Subject" name="overdue_email_subject" defaultValue={gym.overdue_email_subject} />
+          <Textarea
+            label="Body"
+            name="overdue_email_body"
+            defaultValue={gym.overdue_email_body}
+            rows={6}
+            hint="Available: {{member_name}}, {{gym_name}}, {{amount}}, {{failed_date}}"
+          />
+          {reminderError && <p className="text-xs text-[#cf9a90]">{reminderError}</p>}
+          <div className="flex justify-end pt-1">
+            <Button variant="primary" size="sm" type="submit" loading={isReminderPending}>
+              Save template
+            </Button>
+          </div>
+        </form>
       </Card>
 
       {/* Notifications */}

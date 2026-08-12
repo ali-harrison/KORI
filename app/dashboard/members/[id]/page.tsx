@@ -4,6 +4,7 @@ import { Card, CardTitle, Badge, Button } from "@/components/ui";
 import { MemberStatusActions } from "@/components/dashboard/MemberStatusActions";
 import { PaymentsCard } from "@/components/dashboard/PaymentsCard";
 import { DirectDebitSetup } from "@/components/dashboard/DirectDebitSetup";
+import { ContractActions } from "@/components/dashboard/ContractActions";
 import {
   formatDate,
   formatCurrency,
@@ -155,7 +156,7 @@ export default async function MemberDetailPage({
           <Card>
             <CardTitle description="Membership agreement">Contract</CardTitle>
             <div className="mt-4 flex flex-col gap-3">
-              {latestContract ? (
+              {latestContract && (
                 <>
                   <div className="flex items-center justify-between py-2 border-b border-[#1f2420]">
                     <span className="text-xs text-[#8f978f]">Status</span>
@@ -171,18 +172,10 @@ export default async function MemberDetailPage({
                       </span>
                     </div>
                   )}
-                  {latestContract.pdf_url ? (
-                    <Button variant="ghost" size="sm" className="w-full mt-1">View PDF</Button>
-                  ) : (
-                    <Button variant="ghost" size="sm" className="w-full mt-1">Resend</Button>
-                  )}
                 </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-6 text-center gap-2">
-                  <p className="text-xs text-[#646c66]">No contract on file.</p>
-                  <Button variant="secondary" size="sm">Send contract</Button>
-                </div>
               )}
+              {!latestContract && <p className="text-xs text-[#646c66] text-center py-2">No contract on file.</p>}
+              <ContractActions contract={latestContract} memberId={member.id} gymId={gym.id} layout="stack" />
             </div>
           </Card>
         </div>

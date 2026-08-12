@@ -1,6 +1,7 @@
 import { getGym, getDashboardStats, getFailedPaymentAlerts, getRecentActivity } from "@/lib/queries";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { Card, Badge, EmptyState, Bilingual } from "@/components/ui";
+import { NeedsAttentionCard } from "@/components/dashboard/NeedsAttentionCard";
+import { Card, EmptyState, Bilingual } from "@/components/ui";
 import { formatCurrency, formatDate, formatRelativeDate } from "@/utils";
 
 export default async function DashboardPage() {
@@ -39,39 +40,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-[1.5fr_1fr] gap-3 mt-3 items-start">
-        {/* Needs attention — failed GoCardless payments this billing window.
-            Just a signal for the owner to follow up manually; no send
-            button here on purpose. */}
-        <Card padding="none">
-          <div className="flex items-center gap-2 px-[18px] py-3.5">
-            <span className="text-[13px] font-medium">Needs attention</span>
-            {failedPaymentAlerts.length > 0 && (
-              <Badge variant="danger">{failedPaymentAlerts.length}</Badge>
-            )}
-          </div>
-          {failedPaymentAlerts.length > 0 ? (
-            failedPaymentAlerts.map((alert) => (
-              <a
-                key={alert.id}
-                href={alert.memberId ? `/dashboard/members/${alert.memberId}` : "/dashboard/members"}
-                className="flex items-start gap-3 px-[18px] py-3 border-t border-[#191e1a] hover:bg-[#121613] transition-colors duration-150"
-              >
-                <span className="w-[7px] h-[7px] rounded-full bg-[#cf7263] mt-[5px] flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-medium">
-                    Payment failed — {alert.memberName}
-                  </div>
-                  <div className="text-xs text-[#8f978f] mt-[2px] text-pretty">
-                    {formatCurrency(alert.amount)} weekly charge failed on {formatDate(alert.failedAt, { day: "numeric", month: "short" })}.
-                  </div>
-                </div>
-                <span className="text-xs text-[var(--accent)] flex-shrink-0 mt-[1px]">View</span>
-              </a>
-            ))
-          ) : (
-            <EmptyState title={{ en: "All payments up to date" }} className="py-8" />
-          )}
-        </Card>
+        <NeedsAttentionCard alerts={failedPaymentAlerts} gymId={gym.id} />
 
         {/* Recent activity */}
         <Card padding="none">

@@ -70,7 +70,53 @@ export async function updateGym(gymId: string, formData: FormData) {
       address: (formData.get("address") as string)?.trim() || null,
       phone: (formData.get("phone") as string)?.trim() || null,
       email: (formData.get("email") as string)?.trim() || null,
+      logo_url: (formData.get("logo_url") as string)?.trim() || null,
     })
+    .eq("id", gymId)
+    .eq("owner_id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard/settings");
+  return { success: true };
+}
+
+// One reusable template per gym — see lib/templates.ts for the render
+// function and lib/resend.ts for where this gets sent.
+export async function updateContractTemplate(gymId: string, formData: FormData) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
+
+  const contractTemplate = (formData.get("contract_template") as string)?.trim();
+  if (!contractTemplate) return { error: "Contract template can't be empty" };
+
+  const { error } = await supabase
+    .from("gyms")
+    .update({ contract_template: contractTemplate })
+    .eq("id", gymId)
+    .eq("owner_id", user.id);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/dashboard/settings");
+  return { success: true };
+}
+
+export async function updateReminderTemplate(gymId: string, formData: FormData) {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
+
+  const overdueEmailSubject = (formData.get("overdue_email_subject") as string)?.trim();
+  const overdueEmailBody = (formData.get("overdue_email_body") as string)?.trim();
+  if (!overdueEmailSubject || !overdueEmailBody) {
+    return { error: "Subject and body can't be empty" };
+  }
+
+  const { error } = await supabase
+    .from("gyms")
+    .update({ overdue_email_subject: overdueEmailSubject, overdue_email_body: overdueEmailBody })
     .eq("id", gymId)
     .eq("owner_id", user.id);
 

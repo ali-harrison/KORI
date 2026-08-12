@@ -2,6 +2,7 @@ import type {
   Gym, Plan, MemberWithPlan, ContractWithMember, DashboardStats, Payment, FailedPaymentAlert,
   UpcomingCharge, SubmissionDaySummary, MandateSummary, ActivityItem,
 } from "@/types";
+import { DEFAULT_CONTRACT_TEMPLATE, DEFAULT_OVERDUE_EMAIL_SUBJECT, DEFAULT_OVERDUE_EMAIL_BODY } from "@/lib/templates";
 
 export const DEV_GYM: Gym = {
   id: "dev-gym-id",
@@ -17,6 +18,9 @@ export const DEV_GYM: Gym = {
   gc_organisation_id: null,
   gc_access_token: null,
   subscription_status: "trial",
+  contract_template: DEFAULT_CONTRACT_TEMPLATE,
+  overdue_email_subject: DEFAULT_OVERDUE_EMAIL_SUBJECT,
+  overdue_email_body: DEFAULT_OVERDUE_EMAIL_BODY,
   created_at: "2025-01-15T00:00:00Z",
 };
 
@@ -173,6 +177,7 @@ export const DEV_FAILED_PAYMENT_ALERTS: FailedPaymentAlert[] = [
     id: "pay-failed-1",
     memberId: "mem-3",
     memberName: "Aroha Ngata",
+    memberEmail: "aroha.ngata@example.com",
     amount: 15,
     failedAt: "2025-06-10T08:00:00Z",
   },
@@ -182,25 +187,27 @@ export const DEV_CONTRACTS: ContractWithMember[] = [
   {
     id: "con-1", gym_id: "dev-gym-id", member_id: "mem-1",
     template_url: null, pdf_url: "/contracts/sarah-mitchell.pdf",
-    signed_at: "2025-01-20T10:30:00Z", status: "signed", created_at: "2025-01-20T09:00:00Z",
+    signed_at: "2025-01-20T10:30:00Z", status: "signed", last_sent_at: "2025-01-20T09:00:00Z", created_at: "2025-01-20T09:00:00Z",
     member: DEV_MEMBERS[0],
   },
   {
     id: "con-2", gym_id: "dev-gym-id", member_id: "mem-2",
     template_url: null, pdf_url: "/contracts/liam-taufa.pdf",
-    signed_at: "2025-02-01T14:15:00Z", status: "signed", created_at: "2025-02-01T12:00:00Z",
+    signed_at: "2025-02-01T14:15:00Z", status: "signed", last_sent_at: "2025-02-01T12:00:00Z", created_at: "2025-02-01T12:00:00Z",
     member: DEV_MEMBERS[1],
   },
   {
     id: "con-3", gym_id: "dev-gym-id", member_id: "mem-3",
     template_url: null, pdf_url: null,
-    signed_at: "2025-02-14T11:00:00Z", status: "signed", created_at: "2025-02-14T09:30:00Z",
+    signed_at: "2025-02-14T11:00:00Z", status: "signed", last_sent_at: "2025-02-14T09:30:00Z", created_at: "2025-02-14T09:30:00Z",
     member: DEV_MEMBERS[2],
   },
   {
+    // last_sent_at deliberately later than created_at — exercises the
+    // "Sent" column showing the most recent resend, not the original date.
     id: "con-4", gym_id: "dev-gym-id", member_id: "mem-5",
     template_url: null, pdf_url: null,
-    signed_at: null, status: "pending", created_at: "2025-05-10T10:00:00Z",
+    signed_at: null, status: "pending", last_sent_at: "2025-05-17T09:00:00Z", created_at: "2025-05-10T10:00:00Z",
     member: DEV_MEMBERS[4],
   },
 ];

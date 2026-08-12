@@ -27,6 +27,12 @@ export interface Gym {
   gc_organisation_id: string | null;
   gc_access_token: string | null;
   subscription_status: SubscriptionStatus;
+  // Owner-edited, {{token}}-templated copy — see lib/templates.ts for the
+  // render function and default copy, lib/resend.ts for where these get
+  // sent.
+  contract_template: string;
+  overdue_email_subject: string;
+  overdue_email_body: string;
   created_at: string;
 }
 
@@ -90,6 +96,10 @@ export interface Contract {
   signed_at: string | null;
   pdf_url: string | null;
   status: ContractStatus;
+  // Set whenever the contract email is sent or resent — see
+  // app/actions/contracts.ts:sendContract. Null until the first send.
+  // Distinct from created_at, which never changes after the row exists.
+  last_sent_at: string | null;
   created_at: string;
 }
 
@@ -136,6 +146,7 @@ export interface FailedPaymentAlert {
   id: string;
   memberId: string | null;
   memberName: string;
+  memberEmail: string | null;
   amount: number;
   failedAt: string;
 }
@@ -219,4 +230,7 @@ export interface UpdateGymInput {
   phone?: string;
   email?: string;
   logo_url?: string;
+  contract_template?: string;
+  overdue_email_subject?: string;
+  overdue_email_body?: string;
 }

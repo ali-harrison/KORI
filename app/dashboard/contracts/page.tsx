@@ -1,9 +1,10 @@
 import { getGym, getContracts } from "@/lib/queries";
-import { Button, DataTable, DataTableRow, EmptyState, Badge } from "@/components/ui";
+import { DataTable, DataTableRow, EmptyState, Badge } from "@/components/ui";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { ContractActions } from "@/components/dashboard/ContractActions";
 import { formatDate } from "@/utils";
 
-const GRID = "1.8fr 1.4fr 1fr 1fr 1fr 1fr";
+const GRID = "1.8fr 1.4fr 1fr 1fr 1fr 1.2fr";
 
 export default async function ContractsPage() {
   const gym = await getGym();
@@ -18,7 +19,9 @@ export default async function ContractsPage() {
         <span className="text-[17px] font-medium">Contracts</span>
         <span className="text-[13px] text-[#646c66]">{contracts.length} total</span>
         <div className="flex-1" />
-        <Button variant="secondary" size="sm">Upload template</Button>
+        <a href="/dashboard/settings#contract-template" className="text-xs text-[var(--accent)] hover:opacity-80 transition-opacity duration-150">
+          Edit template
+        </a>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-5">
@@ -53,7 +56,7 @@ export default async function ContractsPage() {
                 </a>
                 <div className="text-[13px] text-[#8f978f] truncate">{member.plan?.name ?? "—"}</div>
                 <div className="text-[13px] text-[#8f978f] tabular-nums">
-                  {formatDate(contract.created_at, { day: "numeric", month: "short" })}
+                  {formatDate(contract.last_sent_at ?? contract.created_at, { day: "numeric", month: "short" })}
                 </div>
                 <div className="text-[13px] text-[#8f978f] tabular-nums">
                   {contract.signed_at ? formatDate(contract.signed_at, { day: "numeric", month: "short" }) : "—"}
@@ -63,16 +66,7 @@ export default async function ContractsPage() {
                     {contract.status === "signed" ? "Signed" : "Pending"}
                   </Badge>
                 </div>
-                <div className="text-right">
-                  {contract.status === "pending" && (
-                    <Button variant="ghost" size="sm">Resend</Button>
-                  )}
-                  {contract.status === "signed" && contract.pdf_url && (
-                    <a href={contract.pdf_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="sm">Download</Button>
-                    </a>
-                  )}
-                </div>
+                <ContractActions contract={contract} memberId={member.id} gymId={gym.id} />
               </DataTableRow>
             );
           })}
