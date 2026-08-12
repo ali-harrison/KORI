@@ -76,26 +76,41 @@ export async function sendWelcomeEmail({
   });
 }
 
-// ── Membership contract — rendered from the gym's own contract_template ──────
+// ── Membership contract — the owner-edited template now renders into the
+// attached PDF (lib/contract-pdf.tsx), not the email body. This body is
+// fixed, short notice text, not template-driven. ─────────────────────────
 export async function sendContractEmail({
   to,
   replyTo,
   gymName,
   logoUrl,
-  bodyText,
+  memberName,
+  pdfBuffer,
 }: {
   to: string;
   replyTo: string | null;
   gymName: string;
   logoUrl: string | null;
-  bodyText: string;
+  memberName: string;
+  pdfBuffer: Buffer;
 }) {
   return getResend().emails.send({
     from: FROM,
     to,
     replyTo: replyTo ?? undefined,
     subject: `Your membership agreement — ${gymName}`,
-    html: renderEmailShell({ gymName, logoUrl, bodyText }),
+    html: renderEmailShell({
+      gymName,
+      logoUrl,
+      bodyText: `Hi ${memberName},\n\nYour membership agreement with ${gymName} is attached as a PDF. Please review, sign, and return it, or reply to this email if you have any questions.`,
+    }),
+    attachments: [
+      {
+        filename: "membership-agreement.pdf",
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
   });
 }
 

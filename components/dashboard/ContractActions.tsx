@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
-import { sendContract, markContractSigned } from "@/app/actions/contracts";
+import { sendContract, markContractSigned, getContractDownloadUrl } from "@/app/actions/contracts";
 import type { Contract } from "@/types";
 
 interface Props {
@@ -14,12 +14,15 @@ interface Props {
   layout?: "row" | "stack";
 }
 
-// Branches on contract.status, not pdf_url — pdf_url will always be null
-// under this feature's scope (no PDF generation), so branching on it would
-// show "Resend" forever on an already-signed contract.
+// Branches on contract.status for Resend/Mark-as-signed, but Download is
+// independent of status — pdf_url is set as soon as a contract is first
+// sent (still "pending"), and the PDF's blank signature lines are for a
+// manual/physical sign workflow, so downloading before it's marked signed
+// is a real use case, not an edge case to hide.
 export function ContractActions({ contract, memberId, gymId, layout = "row" }: Props) {
   const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isDownloading, setIsDownloading] = useState(false);
 
   function handleSend() {
     setNotice(null);
@@ -41,6 +44,19 @@ export function ContractActions({ contract, memberId, gymId, layout = "row" }: P
       const result = await markContractSigned(contract.id, gymId, memberId);
       if ("error" in result) setNotice({ type: "error", message: result.error });
     });
+  }
+
+  async function handleDownload() {
+    if (!contract) return;
+    setNotice(null);
+    setIsDownloading(true);
+    const result = await getContractDownloadUrl(contract.id, gymId);
+    setIsDownloading(false);
+    if ("error" in result) {
+      setNotice({ type: "error", message: result.error });
+    } else {
+      window.open(result.url, "_blank", "noopener,noreferrer");
+    }
   }
 
   const buttonClassName = layout === "stack" ? "w-full" : undefined;
@@ -65,12 +81,10 @@ export function ContractActions({ contract, memberId, gymId, layout = "row" }: P
             </Button>
           </>
         )}
-        {contract?.status === "signed" && contract.pdf_url && (
-          <a href={contract.pdf_url} target="_blank" rel="noopener noreferrer" className={buttonClassName}>
-            <Button variant="ghost" size="sm" className={buttonClassName}>
-              Download
-            </Button>
-          </a>
+        {contract?.pdf_url && (
+          <Button variant="ghost" size="sm" className={buttonClassName} onClick={handleDownload} loading={isDownloading}>
+            Download
+          </Button>
         )}
       </div>
       {notice && (
