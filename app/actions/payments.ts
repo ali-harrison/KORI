@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { DEV_BYPASS } from "@/lib/queries";
 
 export async function recordPayment(
   memberId: string,
@@ -18,6 +19,11 @@ export async function recordPayment(
   }
   if (!paidAt) {
     return { error: "Enter the date paid" };
+  }
+
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — recordPayment(${memberId}, ${amount})`);
+    return { success: true };
   }
 
   const { data: member, error: memberError } = await supabase

@@ -63,32 +63,33 @@ export async function sendContract(
 
   const pending = contracts.find((c) => c.status === "pending");
 
-  // Only the network calls are skipped under DEV_BYPASS — the Supabase
-  // write below still runs unconditionally, consistent with every other
-  // action in this codebase (cancelMember, updateMemberStatus, createMember
-  // never guard their writes either). Actually sending a real email/
-  // uploading to real storage during dev testing is what DEV_BYPASS needs
-  // to prevent; a write to the dev/staging DB isn't the same risk.
+  // DEV_BYPASS pages render fixture data (fake gymId/memberId/contract ids
+  // that aren't real rows) — skip the email send AND the Supabase write
+  // together here, not just the network call, since a write using fake
+  // ids would hit real Supabase and fail (invalid uuid). PDF generation
+  // above still runs — it's pure/local given the dev fixture's null
+  // logo_url, and useful to sanity-check while developing.
   if (DEV_BYPASS) {
-    console.log(`[dev] Would send contract PDF email to ${member.email}`);
-  } else {
-    try {
-      await sendContractEmail({
-        to: member.email,
-        replyTo: gym.email,
-        gymName: gym.name,
-        logoUrl: gym.logo_url,
-        memberName,
-        pdfBuffer,
-      });
-    } catch (err) {
-      console.error("Failed to send contract email", err);
-      return { error: "Failed to send the contract email. Try again." };
-    }
+    console.log(`[dev] Would send contract PDF email to ${member.email} and skip the DB write`);
+    return { success: true };
   }
 
-  // From here the primary action (the email) succeeded or was dev-skipped
-  // — this function only ever writes state that's actually true.
+  try {
+    await sendContractEmail({
+      to: member.email,
+      replyTo: gym.email,
+      gymName: gym.name,
+      logoUrl: gym.logo_url,
+      memberName,
+      pdfBuffer,
+    });
+  } catch (err) {
+    console.error("Failed to send contract email", err);
+    return { error: "Failed to send the contract email. Try again." };
+  }
+
+  // From here the primary action (the email) succeeded — this function
+  // only ever writes state that's actually true.
   const contractId = pending?.id ?? crypto.randomUUID();
   const storagePath = `${gymId}/${contractId}.pdf`;
 
@@ -97,15 +98,13 @@ export async function sendContract(
   // they just can't be re-downloaded from the admin UI. Logged loudly, but
   // not worth failing the whole action over.
   let uploadSucceeded = false;
-  if (!DEV_BYPASS) {
-    const { error: uploadError } = await supabase.storage
-      .from(CONTRACTS_BUCKET)
-      .upload(storagePath, pdfBuffer, { upsert: true, contentType: "application/pdf" });
-    if (uploadError) {
-      console.error(`Failed to upload contract PDF for contract ${contractId} — email was still sent`, uploadError);
-    } else {
-      uploadSucceeded = true;
-    }
+  const { error: uploadError } = await supabase.storage
+    .from(CONTRACTS_BUCKET)
+    .upload(storagePath, pdfBuffer, { upsert: true, contentType: "application/pdf" });
+  if (uploadError) {
+    console.error(`Failed to upload contract PDF for contract ${contractId} — email was still sent`, uploadError);
+  } else {
+    uploadSucceeded = true;
   }
 
   const now = new Date().toISOString();
@@ -138,6 +137,10 @@ export async function getContractDownloadUrl(
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
+
+  if (DEV_BYPASS) {
+    return { error: "No PDF available in dev mode — this is fixture data, not a real stored contract." };
+  }
 
   const { data: contract, error } = await supabase
     .from("contracts")
@@ -172,6 +175,11 @@ export async function markContractSigned(
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
+
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — markContractSigned(${contractId})`);
+    return { success: true };
+  }
 
   const { error } = await supabase
     .from("contracts")

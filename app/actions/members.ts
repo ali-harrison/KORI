@@ -3,7 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getGym, getMember } from "@/lib/queries";
+import { getGym, getMember, DEV_BYPASS } from "@/lib/queries";
 import { getGoCardlessGymClient } from "@/lib/gocardless";
 import { cancelMemberBilling } from "@/lib/member-cancellation";
 import type { MemberStatus } from "@/types";
@@ -19,6 +19,16 @@ export async function updateMemberStatus(
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
+
+  // DEV_BYPASS pages render fixture data (e.g. gymId "dev-gym-id") that
+  // isn't a real row — a write using it would hit real Supabase and fail
+  // (invalid uuid, foreign key, etc). No fixture write-back exists, so
+  // this just no-ops the same way DEV_BYPASS-guarded network calls do
+  // elsewhere (app/actions/contracts.ts, reminders.ts).
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — updateMemberStatus(${memberId}, ${status})`);
+    return { success: true };
+  }
 
   const { error } = await supabase
     .from("members")
@@ -48,6 +58,11 @@ export async function cancelMember(
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
+
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — cancelMember(${memberId})`);
+    return { success: true };
+  }
 
   const [gym, member] = await Promise.all([getGym(), getMember(memberId, gymId)]);
   if (!member) return { error: "Member not found" };
@@ -81,6 +96,11 @@ export async function createMember(
 
   if (!first_name || !last_name || !email) {
     return { error: "First name, last name, and email are required" };
+  }
+
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — createMember(${gymId}, ${email})`);
+    return { success: true };
   }
 
   // Duplicate email within a gym is enforced by idx_members_gym_email_unique

@@ -4,6 +4,7 @@ import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { slugify } from "@/utils";
+import { DEV_BYPASS } from "@/lib/queries";
 
 // Single-tenant pilot decision: KORI runs one gym (Southerly Strength) per
 // deployment for now. Self-serve onboarding is kept in the code (it's the
@@ -63,6 +64,11 @@ export async function updateGym(gymId: string, formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — updateGym(${gymId})`);
+    return { success: true };
+  }
+
   const { error } = await supabase
     .from("gyms")
     .update({
@@ -91,6 +97,11 @@ export async function updateContractTemplate(gymId: string, formData: FormData) 
   const contractTemplate = (formData.get("contract_template") as string)?.trim();
   if (!contractTemplate) return { error: "Contract template can't be empty" };
 
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — updateContractTemplate(${gymId})`);
+    return { success: true };
+  }
+
   const { error } = await supabase
     .from("gyms")
     .update({ contract_template: contractTemplate })
@@ -112,6 +123,11 @@ export async function updateReminderTemplate(gymId: string, formData: FormData) 
   const overdueEmailBody = (formData.get("overdue_email_body") as string)?.trim();
   if (!overdueEmailSubject || !overdueEmailBody) {
     return { error: "Subject and body can't be empty" };
+  }
+
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — updateReminderTemplate(${gymId})`);
+    return { success: true };
   }
 
   const { error } = await supabase

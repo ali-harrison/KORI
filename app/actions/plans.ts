@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { DEV_BYPASS } from "@/lib/queries";
 
 // Shared parse/validate for the pricing half of the create/edit plan form.
 // Mirrors the plans_pricing_shape_check constraint in the DB: recurring
@@ -52,6 +53,11 @@ export async function createPlan(
   const pricing = parsePricingFields(formData);
   if ("error" in pricing) return pricing;
 
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — createPlan(${gymId}, ${name})`);
+    return { success: true };
+  }
+
   const { error } = await supabase.from("plans").insert({
     gym_id: gymId,
     name,
@@ -88,6 +94,11 @@ export async function updatePlan(
   const pricing = parsePricingFields(formData);
   if ("error" in pricing) return pricing;
 
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — updatePlan(${planId})`);
+    return { success: true };
+  }
+
   const { error } = await supabase
     .from("plans")
     .update({
@@ -112,6 +123,11 @@ export async function togglePlanActive(planId: string, gymId: string, active: bo
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
 
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — togglePlanActive(${planId}, ${active})`);
+    return { success: true };
+  }
+
   const { error } = await supabase
     .from("plans")
     .update({ active })
@@ -128,6 +144,11 @@ export async function deletePlan(planId: string, gymId: string) {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
+
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — deletePlan(${planId})`);
+    return { success: true };
+  }
 
   // Check if any members are on this plan
   const { count } = await supabase
