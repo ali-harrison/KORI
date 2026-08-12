@@ -31,8 +31,8 @@ export default function AccountPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold text-[#f5f5f5]">My Account</h1>
-        <p className="text-sm text-[#888888]">Manage your membership and billing.</p>
+        <h1 className="text-xl font-medium text-[#e7eae8]">My Account</h1>
+        <p className="text-sm text-[#8f978f]">Manage your membership and billing.</p>
       </div>
 
       {/* Profile */}
@@ -60,15 +60,15 @@ export default function AccountPage() {
           <Badge variant="success" dot>Active</Badge>
         </CardHeader>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 rounded-[6px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)]">
+          <div className="flex items-center justify-between p-4 rounded-[8px] bg-[#0d100e] border border-[#1f2420]">
             <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-semibold text-[#f5f5f5]">{member.plan.name}</span>
-              <span className="text-xs text-[#888888]">
+              <span className="text-sm font-medium text-[#e7eae8]">{member.plan.name}</span>
+              <span className="text-xs text-[#8f978f]">
                 Next billing {formatDate(member.next_billing_date, { day: "numeric", month: "long" })}
               </span>
             </div>
-            <span className="text-base font-semibold text-[#f5f5f5]">
-              {formatCurrency(member.plan.price)}<span className="text-xs text-[#888888] font-normal">/mo</span>
+            <span className="text-base font-medium text-[#e7eae8]">
+              {formatCurrency(member.plan.price)}<span className="text-xs text-[#8f978f] font-normal">/mo</span>
             </span>
           </div>
           <div className="flex items-center gap-2 pt-1">
@@ -95,12 +95,12 @@ export default function AccountPage() {
         <CardHeader className="pb-5 mb-5">
           <CardTitle description="Your saved payment method">Billing</CardTitle>
         </CardHeader>
-        <div className="flex items-center justify-between p-4 rounded-[6px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)]">
+        <div className="flex items-center justify-between p-4 rounded-[8px] bg-[#0d100e] border border-[#1f2420]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-5 rounded-[3px] bg-[rgba(255,255,255,0.1)] flex items-center justify-center">
-              <span className="text-[8px] font-bold text-[#888888]">VISA</span>
+            <div className="w-8 h-5 rounded-[4px] bg-[#151a16] border border-[#232823] flex items-center justify-center">
+              <span className="text-[8px] font-medium text-[#8f978f]">VISA</span>
             </div>
-            <span className="text-xs text-[#888888]">•••• •••• •••• 4242</span>
+            <span className="text-xs text-[#8f978f]">•••• •••• •••• 4242</span>
           </div>
           <Button variant="ghost" size="sm">Update card</Button>
         </div>

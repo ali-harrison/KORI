@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Badge } from "@/components/ui/Badge";
 import { formatCurrency } from "@/utils";
 import { cn } from "@/utils";
 
@@ -37,8 +36,8 @@ export default function JoinPage() {
     <div className="space-y-8">
       {/* Heading */}
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold text-[#f5f5f5]">Join Southerly Strength</h1>
-        <p className="text-sm text-[#888888]">Complete these steps to activate your membership.</p>
+        <h1 className="text-xl font-medium text-[#e7eae8]">Join Southerly Strength</h1>
+        <p className="text-sm text-[#8f978f]">Complete these steps to activate your membership.</p>
       </div>
 
       {/* Step indicator */}
@@ -47,12 +46,12 @@ export default function JoinPage() {
           <div key={s} className="flex items-center gap-2">
             <div
               className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold transition-all duration-150",
+                "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium transition-all duration-150",
                 i < stepIndex
-                  ? "bg-[#10b981] text-white"
+                  ? "bg-[#5fc9a4] text-[#0b0d0c]"
                   : i === stepIndex
-                  ? "bg-[#e8ff47] text-[#0c0c0c]"
-                  : "bg-[rgba(255,255,255,0.06)] text-[#444444]"
+                  ? "bg-[var(--accent)] text-[#0b0d0c]"
+                  : "bg-[#151a16] text-[#646c66]"
               )}
             >
               {i < stepIndex ? (
@@ -66,7 +65,7 @@ export default function JoinPage() {
             <span
               className={cn(
                 "text-xs",
-                i === stepIndex ? "text-[#f5f5f5] font-medium" : "text-[#444444]"
+                i === stepIndex ? "text-[#e7eae8] font-medium" : "text-[#646c66]"
               )}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -75,7 +74,7 @@ export default function JoinPage() {
               <div
                 className={cn(
                   "w-8 h-px mx-1",
-                  i < stepIndex ? "bg-[#10b981]" : "bg-[rgba(255,255,255,0.08)]"
+                  i < stepIndex ? "bg-[#5fc9a4]" : "bg-[#1f2420]"
                 )}
               />
             )}
@@ -102,27 +101,27 @@ export default function JoinPage() {
               key={plan.id}
               onClick={() => setSelectedPlan(plan.id)}
               className={cn(
-                "w-full flex items-center justify-between p-4 rounded-[8px] border text-left transition-all duration-150",
+                "w-full flex items-center justify-between p-4 rounded-[10px] border text-left transition-all duration-150",
                 selectedPlan === plan.id
-                  ? "bg-[rgba(232,255,71,0.06)] border-[rgba(232,255,71,0.2)]"
-                  : "bg-[#111111] border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.12)] hover:bg-[#141414]"
+                  ? "bg-[color-mix(in_srgb,var(--accent)_8%,transparent)] border-[color-mix(in_srgb,var(--accent)_25%,transparent)]"
+                  : "bg-[#111412] border-[#1f2420] hover:border-[#3a403b] hover:bg-[#141814]"
               )}
             >
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-semibold text-[#f5f5f5]">{plan.name}</span>
-                <span className="text-xs text-[#888888]">{plan.description}</span>
+                <span className="text-sm font-medium text-[#e7eae8]">{plan.name}</span>
+                <span className="text-xs text-[#8f978f]">{plan.description}</span>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
                 <div className="text-right">
-                  <span className="text-base font-semibold text-[#f5f5f5]">
+                  <span className="text-base font-medium text-[#e7eae8]">
                     {formatCurrency(plan.price)}
                   </span>
-                  <span className="text-xs text-[#888888] ml-1">/{plan.interval === "monthly" ? "mo" : "yr"}</span>
+                  <span className="text-xs text-[#8f978f] ml-1">/{plan.interval === "monthly" ? "mo" : "yr"}</span>
                 </div>
                 {selectedPlan === plan.id && (
-                  <div className="w-4 h-4 rounded-full bg-[#e8ff47] flex items-center justify-center flex-shrink-0">
+                  <div className="w-4 h-4 rounded-full bg-[var(--accent)] flex items-center justify-center flex-shrink-0">
                     <svg width="8" height="8" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke="#0c0c0c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M2 6l3 3 5-5" stroke="#0b0d0c" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 )}
@@ -134,20 +133,20 @@ export default function JoinPage() {
 
       {step === "payment" && (
         <div className="space-y-4">
-          <div className="p-4 rounded-[8px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)]">
-            <p className="text-xs text-[#888888] mb-3">Selected plan</p>
+          <div className="p-4 rounded-[10px] bg-[#0d100e] border border-[#1f2420]">
+            <p className="text-xs text-[#8f978f] mb-3">Selected plan</p>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#f5f5f5]">
+              <span className="text-sm font-medium text-[#e7eae8]">
                 {plans.find((p) => p.id === selectedPlan)?.name ?? "Monthly Unlimited"}
               </span>
-              <span className="text-sm font-semibold text-[#f5f5f5]">
+              <span className="text-sm font-medium text-[#e7eae8]">
                 {formatCurrency(plans.find((p) => p.id === selectedPlan)?.price ?? 89)}/mo
               </span>
             </div>
           </div>
-          {/* Stripe Elements would mount here */}
-          <div className="p-4 rounded-[6px] border border-dashed border-[rgba(255,255,255,0.08)] text-center">
-            <p className="text-xs text-[#444444]">Stripe Elements mounts here</p>
+          {/* GoCardless Billing Request Flow redirects here — see startBillingForMember */}
+          <div className="p-4 rounded-[8px] border border-dashed border-[#262b27] text-center">
+            <p className="text-xs text-[#646c66]">Direct debit setup redirects to GoCardless here</p>
           </div>
         </div>
       )}
@@ -156,7 +155,7 @@ export default function JoinPage() {
         {step !== "details" ? (
           <button
             onClick={() => setStep(steps[stepIndex - 1])}
-            className="text-xs text-[#888888] hover:text-[#f5f5f5] transition-colors"
+            className="text-xs text-[#8f978f] hover:text-[#e7eae8] transition-colors"
           >
             ← Back
           </button>
