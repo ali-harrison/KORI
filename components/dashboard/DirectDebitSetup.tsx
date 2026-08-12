@@ -54,7 +54,7 @@ export function DirectDebitSetup({ memberId, hasMandate }: Props) {
         Set up direct debit
       </Button>
       {notice && (
-        <p className={`text-xs ${notice.type === "success" ? "text-[#10b981]" : "text-[#ef4444]"}`}>
+        <p className={`text-xs ${notice.type === "success" ? "text-[#5fc9a4]" : "text-[#cf9a90]"}`}>
           {notice.message}
         </p>
       )}

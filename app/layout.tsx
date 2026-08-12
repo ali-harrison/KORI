@@ -1,15 +1,23 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Instrument_Sans, Spline_Sans_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
-  variable: "--font-inter",
+  weight: ["400", "500"],
+  variable: "--font-instrument-sans",
+  display: "swap",
+});
+
+const splineSansMono = Spline_Sans_Mono({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-spline-sans-mono",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "KORI/GYM — Gym Management",
+  title: "kori/os — Gym Management",
   description: "Gym management platform for NZ gyms",
 };
 
@@ -19,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
+    <html lang="en" className={`${instrumentSans.variable} ${splineSansMono.variable} h-full`}>
       <body className="h-full antialiased">{children}</body>
     </html>
   );

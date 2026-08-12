@@ -15,32 +15,33 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: [
-    "bg-[#e8ff47] text-[#0c0c0c] font-semibold",
-    "hover:bg-[#f0ff6b] hover:shadow-[0_0_16px_rgba(232,255,71,0.2)]",
-    "disabled:bg-[rgba(232,255,71,0.3)] disabled:text-[rgba(12,12,12,0.4)] disabled:shadow-none",
+    "bg-[var(--accent)] text-[#0b0d0c] font-medium",
+    "hover:opacity-90",
+    "disabled:opacity-40",
   ].join(" "),
   secondary: [
-    "bg-[#161616] text-[#f5f5f5] font-medium",
-    "border border-[rgba(255,255,255,0.08)]",
-    "hover:bg-[#1c1c1c] hover:border-[rgba(255,255,255,0.14)]",
+    "bg-[#151a16] text-[#e7eae8] font-normal",
+    "border border-[#262b27]",
+    "hover:border-[#3a403b]",
     "disabled:opacity-40",
   ].join(" "),
   ghost: [
-    "bg-transparent text-[#888888] font-medium",
-    "hover:bg-[rgba(255,255,255,0.04)] hover:text-[#f5f5f5]",
+    "bg-transparent text-[#b9c0ba] font-normal",
+    "border border-[#262b27]",
+    "hover:border-[#3a403b]",
     "disabled:opacity-40",
   ].join(" "),
   danger: [
-    "bg-[rgba(239,68,68,0.1)] text-[#ef4444] font-medium",
-    "border border-[rgba(239,68,68,0.2)]",
-    "hover:bg-[rgba(239,68,68,0.18)] hover:border-[rgba(239,68,68,0.35)]",
+    "bg-[rgba(207,114,99,0.10)] text-[#cf7263] font-normal",
+    "border border-[rgba(207,114,99,0.24)]",
+    "hover:bg-[rgba(207,114,99,0.16)] hover:border-[rgba(207,114,99,0.4)]",
     "disabled:opacity-40",
   ].join(" "),
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "h-7 px-3 text-xs rounded-[6px] gap-1.5",
-  md: "h-9 px-4 text-sm rounded-[6px] gap-2",
+  sm: "h-7 px-3 text-xs rounded-[7px] gap-1.5",
+  md: "h-9 px-3.5 text-[13px] rounded-[8px] gap-2",
   lg: "h-11 px-5 text-sm rounded-[8px] gap-2",
 };
 
@@ -59,8 +60,8 @@ export function Button({
     <button
       className={cn(
         "inline-flex items-center justify-center whitespace-nowrap",
-        "transition-all duration-150 ease-out",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(232,255,71,0.5)]",
+        "transition-colors duration-150 ease-out",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]",
         "cursor-pointer select-none",
         variantStyles[variant],
         sizeStyles[size],

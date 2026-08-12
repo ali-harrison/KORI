@@ -78,7 +78,7 @@ async function handlePaymentEvent(
 
   const { data: member } = await supabase
     .from("members")
-    .select("id, gym_id, plan_id")
+    .select("id, gym_id, plan_id, plan:plans(billing_interval)")
     .eq("gc_mandate_id", mandateId)
     .maybeSingle();
 
@@ -125,10 +125,40 @@ async function handlePaymentEvent(
     return;
   }
 
-  await supabase
-    .from("members")
-    .update({ status: status === "succeeded" ? "active" : "paused" })
-    .eq("id", member.id);
+  const updates: { status: string; next_billing_date?: string } = {
+    status: status === "succeeded" ? "active" : "paused",
+  };
+
+  // Advance next_billing_date on a confirmed recurring payment, using the
+  // plan's own billing_interval rather than another GoCardless API call —
+  // this is what keeps the date moving after billing-callback sets it
+  // initially from GC's schedule at mandate-creation time.
+  if (status === "succeeded" && payment.links?.subscription) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const billingInterval = (member as any).plan?.billing_interval as string | null | undefined;
+    const chargeDate = payment.charge_date ?? event.created_at;
+    if (billingInterval && chargeDate) {
+      updates.next_billing_date = addBillingInterval(chargeDate, billingInterval);
+    }
+  }
+
+  await supabase.from("members").update(updates).eq("id", member.id);
+}
+
+function addBillingInterval(dateStr: string, interval: string): string {
+  const d = new Date(dateStr);
+  switch (interval) {
+    case "weekly":
+      d.setUTCDate(d.getUTCDate() + 7);
+      break;
+    case "monthly":
+      d.setUTCMonth(d.getUTCMonth() + 1);
+      break;
+    case "annual":
+      d.setUTCFullYear(d.getUTCFullYear() + 1);
+      break;
+  }
+  return d.toISOString().split("T")[0];
 }
 
 async function handleMandateCancelled(event: Event, supabase: AdminClient): Promise<void> {

@@ -11,7 +11,7 @@ interface CardProps {
 const paddingStyles = {
   none: "",
   sm: "p-4",
-  md: "p-5",
+  md: "p-4 md:p-[18px]",
   lg: "p-6",
 };
 
@@ -28,13 +28,12 @@ export function Card({
     <Tag
       onClick={onClick}
       className={cn(
-        "relative rounded-[8px]",
-        "bg-[#111111]",
-        "border border-[rgba(255,255,255,0.06)]",
-        "shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+        "relative rounded-[10px]",
+        "bg-[#111412]",
+        "border border-[#1f2420]",
         paddingStyles[padding],
         hoverable &&
-          "cursor-pointer transition-all duration-150 hover:bg-[#141414] hover:border-[rgba(255,255,255,0.1)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.04)]",
+          "cursor-pointer transition-colors duration-150 hover:bg-[#141814]",
         onClick && "w-full text-left",
         className
       )}
@@ -54,7 +53,7 @@ export function CardHeader({ children, className }: CardHeaderProps) {
     <div
       className={cn(
         "flex items-center justify-between pb-4",
-        "border-b border-[rgba(255,255,255,0.06)]",
+        "border-b border-[#1f2420]",
         className
       )}
     >
@@ -72,11 +71,11 @@ interface CardTitleProps {
 export function CardTitle({ children, className, description }: CardTitleProps) {
   return (
     <div className={cn("flex flex-col gap-0.5", className)}>
-      <h3 className="text-sm font-semibold text-[#f5f5f5] leading-snug">
+      <h3 className="text-[13px] font-medium text-[#e7eae8] leading-snug">
         {children}
       </h3>
       {description && (
-        <p className="text-xs text-[#888888] leading-snug">{description}</p>
+        <p className="text-xs text-[#8f978f] leading-snug">{description}</p>
       )}
     </div>
   );

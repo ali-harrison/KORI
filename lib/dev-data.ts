@@ -1,4 +1,7 @@
-import type { Gym, Plan, MemberWithPlan, ContractWithMember, DashboardStats, Payment, FailedPaymentAlert } from "@/types";
+import type {
+  Gym, Plan, MemberWithPlan, ContractWithMember, DashboardStats, Payment, FailedPaymentAlert,
+  UpcomingCharge, SubmissionDaySummary, MandateSummary, ActivityItem,
+} from "@/types";
 
 export const DEV_GYM: Gym = {
   id: "dev-gym-id",
@@ -73,7 +76,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     first_name: "Sarah", last_name: "Mitchell", email: "sarah.mitchell@example.com", phone: "+64 21 555 1234",
     plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "active",
     stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
+    gc_customer_id: "CU00SARAH01", gc_mandate_id: "MD00SARAH01", gc_subscription_id: "SB00SARAH01",
     invite_token: null, invite_sent_at: null,
     start_date: "2025-01-20", next_billing_date: "2025-06-20", created_at: "2025-01-20T00:00:00Z",
   },
@@ -82,16 +85,16 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     first_name: "Liam", last_name: "Taufa", email: "liam.taufa@example.com", phone: "+64 27 344 8821",
     plan_id: "plan-pif-12mo", plan: PLAN_PIF_12MO, status: "active",
     stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
+    gc_customer_id: "CU00LIAM002", gc_mandate_id: "MD00LIAM002", gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-02-01", next_billing_date: "2026-02-01", created_at: "2025-02-01T00:00:00Z",
+    start_date: "2025-02-01", next_billing_date: null, created_at: "2025-02-01T00:00:00Z",
   },
   {
     id: "mem-3", gym_id: "dev-gym-id", user_id: null,
     first_name: "Aroha", last_name: "Ngata", email: "aroha.ngata@example.com", phone: "+64 22 100 4455",
     plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "active",
     stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
+    gc_customer_id: "CU00AROHA03", gc_mandate_id: "MD00AROHA03", gc_subscription_id: "SB00AROHA03",
     invite_token: null, invite_sent_at: null,
     start_date: "2025-02-14", next_billing_date: "2025-06-14", created_at: "2025-02-14T00:00:00Z",
   },
@@ -100,7 +103,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     first_name: "James", last_name: "Park", email: "jpark92@example.com", phone: "+64 21 678 9900",
     plan_id: "plan-pif-3mo", plan: PLAN_PIF_3MO, status: "paused",
     stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
+    gc_customer_id: "CU00JAMES04", gc_mandate_id: "MD00JAMES04", gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
     start_date: "2025-03-05", next_billing_date: null, created_at: "2025-03-05T00:00:00Z",
   },
@@ -109,7 +112,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     first_name: "Mia", last_name: "Chen", email: "mia.chen@example.com", phone: "+64 21 234 5678",
     plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "pending",
     stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
+    gc_customer_id: "CU00MIACH05", gc_mandate_id: "MD00MIACH05", gc_subscription_id: "SB00MIACH05",
     invite_token: null, invite_sent_at: null,
     start_date: "2025-05-10", next_billing_date: "2025-06-10", created_at: "2025-05-10T00:00:00Z",
   },
@@ -120,7 +123,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-03-20", next_billing_date: "2026-03-20", created_at: "2025-03-20T00:00:00Z",
+    start_date: "2025-03-20", next_billing_date: null, created_at: "2025-03-20T00:00:00Z",
   },
   {
     id: "mem-7", gym_id: "dev-gym-id", user_id: null,
@@ -130,6 +133,18 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
     start_date: "2025-01-28", next_billing_date: null, created_at: "2025-01-28T00:00:00Z",
+  },
+  {
+    // Only member showing the "cancelled mandate" state (gc_mandate_id
+    // null + status paused — see getMandateBadgeState) — every other
+    // paused/cancelled fixture above has a different real cause.
+    id: "mem-8", gym_id: "dev-gym-id", user_id: null,
+    first_name: "Kahu", last_name: "Ropata", email: "kahu.ropata@example.com", phone: "+64 21 887 3021",
+    plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "paused",
+    stripe_customer_id: null, stripe_subscription_id: null,
+    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
+    invite_token: null, invite_sent_at: null,
+    start_date: "2025-04-02", next_billing_date: null, created_at: "2025-04-02T00:00:00Z",
   },
 ];
 
@@ -196,4 +211,31 @@ export const DEV_PAYMENTS: Payment[] = [
     type: "one_off", status: "succeeded", note: "Bank transfer ref #4471", gc_event_id: null,
     paid_at: "2025-02-01T00:00:00Z", created_at: "2025-02-01T12:00:00Z",
   },
+];
+
+export const DEV_UPCOMING_CHARGES: UpcomingCharge[] = [
+  { memberId: "mem-3", memberName: "Aroha Ngata", planName: "Weekly Direct Debit", amount: 18, chargeDate: "2025-06-14" },
+  { memberId: "mem-1", memberName: "Sarah Mitchell", planName: "Weekly Direct Debit", amount: 18, chargeDate: "2025-06-20" },
+];
+
+export const DEV_RECENT_SUBMISSIONS: SubmissionDaySummary[] = [
+  { date: "2025-06-13", chargeCount: 1, succeededCount: 1, succeededValue: 15, failedCount: 0, status: "clear" },
+  { date: "2025-06-10", chargeCount: 1, succeededCount: 0, succeededValue: 0, failedCount: 1, status: "all_failed" },
+  { date: "2025-06-06", chargeCount: 1, succeededCount: 1, succeededValue: 15, failedCount: 0, status: "clear" },
+];
+
+// Matches DEV_MEMBERS' gc_mandate_id/status combinations exactly (see
+// getMandateBadgeState): active × 3 (mem-1, mem-2, mem-3), pending × 1
+// (mem-5), failed × 1 (mem-4), cancelled × 1 (mem-8), none × 2 (mem-6, mem-7).
+export const DEV_MANDATE_SUMMARY: MandateSummary = {
+  active: 3, pending: 1, failed: 1, cancelled: 1, none: 2, total: 8,
+};
+
+export const DEV_ACTIVITY: ActivityItem[] = [
+  { id: "activity-1", timestamp: "2025-06-13T09:00:00Z", text: "$18.00 collected — Sarah Mitchell" },
+  { id: "activity-2", timestamp: "2025-06-10T08:00:00Z", text: "Payment failed — Aroha Ngata" },
+  { id: "activity-3", timestamp: "2025-06-06T09:00:00Z", text: "$18.00 collected — Sarah Mitchell" },
+  { id: "activity-4", timestamp: "2025-05-10T00:00:00Z", text: "Mia Chen joined on the Weekly Direct Debit plan" },
+  { id: "activity-5", timestamp: "2025-04-02T00:00:00Z", text: "Kahu Ropata joined on the Weekly Direct Debit plan" },
+  { id: "activity-6", timestamp: "2025-02-01T12:00:00Z", text: "$799.00 collected — Liam Taufa" },
 ];

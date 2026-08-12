@@ -18,16 +18,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="text-xs font-medium text-[#888888] tracking-wide"
-          >
+          <label htmlFor={inputId} className="text-xs text-[#8f978f]">
             {label}
           </label>
         )}
         <div className="relative flex items-center">
           {icon && (
-            <span className="absolute left-3 text-[#444444] pointer-events-none flex-shrink-0">
+            <span className="absolute left-3 text-[#646c66] pointer-events-none flex-shrink-0">
               {icon}
             </span>
           )}
@@ -35,16 +32,16 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              "w-full h-9 bg-[#0c0c0c] text-[#f5f5f5] text-sm",
-              "border border-[rgba(255,255,255,0.08)] rounded-[6px]",
+              "w-full h-9 bg-[#0d100e] text-[#e7eae8] text-sm",
+              "border border-[#212623] rounded-[8px]",
               "px-3 py-2",
-              "placeholder:text-[#444444]",
-              "transition-all duration-150",
+              "placeholder:text-[#59615b]",
+              "transition-colors duration-150",
               "outline-none",
-              "focus:border-[rgba(255,255,255,0.2)] focus:shadow-[0_0_0_3px_rgba(232,255,71,0.06)]",
-              "hover:border-[rgba(255,255,255,0.12)]",
+              "focus:border-[var(--accent)]",
+              "hover:border-[#3a403b]",
               "disabled:opacity-40 disabled:cursor-not-allowed",
-              error && "border-[rgba(239,68,68,0.4)] focus:border-[rgba(239,68,68,0.6)] focus:shadow-[0_0_0_3px_rgba(239,68,68,0.08)]",
+              error && "border-[rgba(207,114,99,0.4)] focus:border-[rgba(207,114,99,0.6)]",
               icon ? "pl-9" : "",
               iconRight ? "pr-9" : "",
               className
@@ -52,13 +49,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {iconRight && (
-            <span className="absolute right-3 text-[#444444] pointer-events-none flex-shrink-0">
+            <span className="absolute right-3 text-[#646c66] pointer-events-none flex-shrink-0">
               {iconRight}
             </span>
           )}
         </div>
         {(hint || error) && (
-          <p className={cn("text-xs", error ? "text-[#ef4444]" : "text-[#444444]")}>
+          <p className={cn("text-xs", error ? "text-[#cf7263]" : "text-[#59615b]")}>
             {error ?? hint}
           </p>
         )}
@@ -84,10 +81,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="text-xs font-medium text-[#888888] tracking-wide"
-          >
+          <label htmlFor={inputId} className="text-xs text-[#8f978f]">
             {label}
           </label>
         )}
@@ -95,22 +89,22 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            "w-full bg-[#0c0c0c] text-[#f5f5f5] text-sm",
-            "border border-[rgba(255,255,255,0.08)] rounded-[6px]",
-            "px-3 py-2.5 min-h-[80px] resize-y",
-            "placeholder:text-[#444444]",
-            "transition-all duration-150",
+            "w-full bg-[#0d100e] text-[#e7eae8] text-sm",
+            "border border-[#212623] rounded-[8px]",
+            "px-3 py-2.5 min-h-[76px] resize-none",
+            "placeholder:text-[#59615b]",
+            "transition-colors duration-150",
             "outline-none",
-            "focus:border-[rgba(255,255,255,0.2)] focus:shadow-[0_0_0_3px_rgba(232,255,71,0.06)]",
-            "hover:border-[rgba(255,255,255,0.12)]",
+            "focus:border-[var(--accent)]",
+            "hover:border-[#3a403b]",
             "disabled:opacity-40 disabled:cursor-not-allowed",
-            error && "border-[rgba(239,68,68,0.4)] focus:border-[rgba(239,68,68,0.6)]",
+            error && "border-[rgba(207,114,99,0.4)] focus:border-[rgba(207,114,99,0.6)]",
             className
           )}
           {...props}
         />
         {(hint || error) && (
-          <p className={cn("text-xs", error ? "text-[#ef4444]" : "text-[#444444]")}>
+          <p className={cn("text-xs", error ? "text-[#cf7263]" : "text-[#59615b]")}>
             {error ?? hint}
           </p>
         )}
@@ -137,10 +131,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
-          <label
-            htmlFor={inputId}
-            className="text-xs font-medium text-[#888888] tracking-wide"
-          >
+          <label htmlFor={inputId} className="text-xs text-[#8f978f]">
             {label}
           </label>
         )}
@@ -149,12 +140,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              "w-full h-9 bg-[#0c0c0c] text-[#f5f5f5] text-sm",
-              "border border-[rgba(255,255,255,0.08)] rounded-[6px]",
+              "w-full h-9 bg-[#0d100e] text-[#e7eae8] text-sm",
+              "border border-[#212623] rounded-[8px]",
               "px-3 py-2 pr-8 appearance-none cursor-pointer",
-              "transition-all duration-150 outline-none",
-              "focus:border-[rgba(255,255,255,0.2)] focus:shadow-[0_0_0_3px_rgba(232,255,71,0.06)]",
-              "hover:border-[rgba(255,255,255,0.12)]",
+              "transition-colors duration-150 outline-none",
+              "focus:border-[var(--accent)]",
+              "hover:border-[#3a403b]",
               "disabled:opacity-40 disabled:cursor-not-allowed",
               className
             )}
@@ -166,14 +157,14 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
               </option>
             ))}
           </select>
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#444444]">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[#646c66]">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
         </div>
         {(hint || error) && (
-          <p className={cn("text-xs", error ? "text-[#ef4444]" : "text-[#444444]")}>
+          <p className={cn("text-xs", error ? "text-[#cf7263]" : "text-[#59615b]")}>
             {error ?? hint}
           </p>
         )}

@@ -61,7 +61,7 @@ export function AddMemberModal({ open, onClose, gymId, plans }: AddMemberModalPr
         <Input label="Email" name="email" type="email" placeholder="sarah@example.com" required />
         <Input label="Phone" name="phone" type="tel" placeholder="+64 21 000 0000" />
         <Select label="Plan" name="plan_id" options={planOptions} />
-        {error && <p className="text-xs text-[#ef4444]">{error}</p>}
+        {error && <p className="text-xs text-[#cf7263]">{error}</p>}
       </form>
     </Modal>
   );

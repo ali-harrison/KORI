@@ -1,5 +1,4 @@
 import { getGym } from "@/lib/queries";
-import { Header } from "@/components/dashboard/Header";
 import { SettingsForm } from "@/components/dashboard/SettingsForm";
 
 export default async function SettingsPage() {
@@ -7,15 +6,11 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <Header
-        title="Settings"
-        description="Gym profile and integrations"
-        userEmail={gym.email ?? undefined}
-        userInitials={gym.name.slice(0, 2).toUpperCase()}
-      />
-      <div className="px-8 py-7">
-        <SettingsForm gym={gym} />
+      <div className="mb-[22px]">
+        <h1 className="text-xl font-medium">Settings</h1>
+        <p className="text-[13px] text-[#8f978f] mt-[3px]">Gym profile and integrations</p>
       </div>
+      <SettingsForm gym={gym} />
     </div>
   );
 }

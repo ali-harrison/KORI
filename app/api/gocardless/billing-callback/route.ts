@@ -111,9 +111,14 @@ export async function GET(request: NextRequest) {
         name: plan.name,
       });
 
+      // GoCardless returns the subscription's own schedule — use it rather
+      // than computing a date ourselves, so this stays correct even if GC's
+      // collection-day logic doesn't match a naive "+7 days" assumption.
+      const nextBillingDate = subscription.upcoming_payments?.[0]?.charge_date ?? null;
+
       await supabase
         .from("members")
-        .update({ gc_subscription_id: subscription.id ?? null })
+        .update({ gc_subscription_id: subscription.id ?? null, next_billing_date: nextBillingDate })
         .eq("id", memberId);
     } catch (err) {
       console.error("GoCardless subscription creation failed:", err);

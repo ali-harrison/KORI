@@ -57,7 +57,7 @@ export function SettingsForm({ gym }: Props) {
         <CardHeader className="pb-5 mb-5">
           <CardTitle description="Your gym's public details">Gym Profile</CardTitle>
           {saved && (
-            <span className="text-xs text-[#10b981] flex items-center gap-1.5">
+            <span className="text-xs text-[#5fc9a4] flex items-center gap-1.5">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                 <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -81,7 +81,7 @@ export function SettingsForm({ gym }: Props) {
             <Input label="Phone" name="phone" defaultValue={gym.phone ?? ""} />
             <Input label="Email" name="email" type="email" defaultValue={gym.email ?? ""} />
           </div>
-          {error && <p className="text-xs text-[#ef4444]">{error}</p>}
+          {error && <p className="text-xs text-[#cf9a90]">{error}</p>}
           <div className="flex justify-end pt-1">
             <Button variant="primary" size="sm" type="submit" loading={isPending}>
               Save changes
@@ -102,17 +102,17 @@ export function SettingsForm({ gym }: Props) {
         </CardHeader>
         <div className="space-y-4">
           {gcNotice && (
-            <p className={`text-xs ${gcNotice.type === "success" ? "text-[#10b981]" : "text-[#ef4444]"}`}>
+            <p className={`text-xs ${gcNotice.type === "success" ? "text-[#5fc9a4]" : "text-[#cf9a90]"}`}>
               {gcNotice.message}
             </p>
           )}
-          <p className="text-xs text-[#888888] leading-relaxed">
+          <p className="text-xs text-[#8f978f] leading-relaxed">
             Connect your GoCardless account to collect recurring direct debits from members.
             Funds go directly to your bank account on your GoCardless settlement schedule.
           </p>
-          <div className="flex items-center gap-3 p-4 rounded-[6px] bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.06)]">
-            <div className="w-8 h-8 rounded-[6px] bg-[rgba(255,255,255,0.06)] flex items-center justify-center flex-shrink-0">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-[#888888]">
+          <div className="flex items-center gap-3 p-4 rounded-[8px] bg-[#0d100e] border border-[#1f2420]">
+            <div className="w-8 h-8 rounded-[7px] bg-[#151a16] border border-[#232823] flex items-center justify-center flex-shrink-0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-[#8f978f]">
                 <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
                 <path d="M2 10h20" stroke="currentColor" strokeWidth="1.5" />
                 <circle cx="6" cy="15" r="1" fill="currentColor" />
@@ -122,15 +122,15 @@ export function SettingsForm({ gym }: Props) {
             <div className="flex-1 min-w-0">
               {gym.gc_organisation_id ? (
                 <>
-                  <p className="text-xs font-medium text-[#f5f5f5]">Connected</p>
-                  <p className="text-[10px] text-[#444444]">
+                  <p className="text-xs font-medium text-[#e7eae8]">Connected</p>
+                  <p className="text-[10px] text-[#646c66]">
                     Organisation: {gym.gc_organisation_id}
                   </p>
                 </>
               ) : (
                 <>
-                  <p className="text-xs font-medium text-[#f5f5f5]">Not connected</p>
-                  <p className="text-[10px] text-[#444444]">
+                  <p className="text-xs font-medium text-[#e7eae8]">Not connected</p>
+                  <p className="text-[10px] text-[#646c66]">
                     Link GoCardless to enable direct debit billing
                   </p>
                 </>
@@ -161,23 +161,23 @@ export function SettingsForm({ gym }: Props) {
           ].map((item) => (
             <div
               key={item.label}
-              className="flex items-center justify-between py-3 border-b border-[rgba(255,255,255,0.04)] last:border-0"
+              className="flex items-center justify-between py-3 border-b border-[#191e1a] last:border-0"
             >
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium text-[#f5f5f5]">{item.label}</span>
-                <span className="text-[10px] text-[#444444]">{item.description}</span>
+                <span className="text-xs font-medium text-[#e7eae8]">{item.label}</span>
+                <span className="text-[10px] text-[#646c66]">{item.description}</span>
               </div>
               <button
                 className={`relative rounded-full border transition-all duration-150 flex-shrink-0 ${
                   item.enabled
-                    ? "bg-[rgba(232,255,71,0.15)] border-[rgba(232,255,71,0.3)]"
-                    : "bg-[rgba(255,255,255,0.04)] border-[rgba(255,255,255,0.08)]"
+                    ? "bg-[color-mix(in_srgb,var(--accent)_15%,transparent)] border-[color-mix(in_srgb,var(--accent)_30%,transparent)]"
+                    : "bg-[#151a16] border-[#232823]"
                 }`}
                 style={{ width: 32, height: 18 }}
               >
                 <span
                   className={`absolute top-[3px] w-3 h-3 rounded-full transition-all duration-150 ${
-                    item.enabled ? "left-[17px] bg-[#e8ff47]" : "left-[3px] bg-[#444444]"
+                    item.enabled ? "left-[17px] bg-[var(--accent)]" : "left-[3px] bg-[#646c66]"
                   }`}
                 />
               </button>
@@ -191,10 +191,10 @@ export function SettingsForm({ gym }: Props) {
         <CardHeader className="pb-5 mb-5">
           <CardTitle description="Irreversible actions">Danger Zone</CardTitle>
         </CardHeader>
-        <div className="flex items-center justify-between p-4 rounded-[6px] border border-[rgba(239,68,68,0.15)] bg-[rgba(239,68,68,0.04)]">
+        <div className="flex items-center justify-between p-4 rounded-[8px] border border-[rgba(207,114,99,0.20)] bg-[rgba(207,114,99,0.06)]">
           <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[#f5f5f5]">Delete gym</span>
-            <span className="text-[10px] text-[#888888]">
+            <span className="text-xs font-medium text-[#e7eae8]">Delete gym</span>
+            <span className="text-[10px] text-[#8f978f]">
               Permanently delete all data. Cannot be undone.
             </span>
           </div>

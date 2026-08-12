@@ -1,5 +1,5 @@
-import { getGym, getUser } from "@/lib/queries";
-import { Sidebar } from "@/components/dashboard/Sidebar";
+import { getGym, getUser, getMemberCount } from "@/lib/queries";
+import { AppShell } from "@/components/dashboard/AppShell";
 
 export default async function DashboardLayout({
   children,
@@ -7,13 +7,11 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [user, gym] = await Promise.all([getUser(), getGym()]);
+  const memberCount = await getMemberCount(gym.id);
 
   return (
-    <div className="flex h-full bg-[#0c0c0c]">
-      <Sidebar gymName={gym.name} />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <main className="flex-1 overflow-y-auto">{children}</main>
-      </div>
-    </div>
+    <AppShell gymName={gym.name} memberCount={memberCount} userEmail={user.email}>
+      {children}
+    </AppShell>
   );
 }

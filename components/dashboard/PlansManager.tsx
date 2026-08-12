@@ -58,8 +58,10 @@ export function PlansManager({ plans, gymId }: Props) {
 
   return (
     <>
-      <div className="flex items-center justify-between mb-5">
-        <div />
+      <div className="flex items-center gap-2.5 mb-5">
+        <span className="text-[17px] font-medium">Plans</span>
+        <span className="text-[13px] text-[#646c66]">{plans.length} plans</span>
+        <div className="flex-1" />
         <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
           New plan
         </Button>
@@ -69,13 +71,13 @@ export function PlansManager({ plans, gymId }: Props) {
         {plans.map((plan) => (
           <div
             key={plan.id}
-            className="group relative rounded-[8px] bg-[#111111] border border-[rgba(255,255,255,0.06)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] p-5"
+            className="group relative rounded-[10px] bg-[#111412] border border-[#1f2420] p-5"
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex flex-col gap-1 min-w-0">
-                <h3 className="text-sm font-semibold text-[#f5f5f5] truncate">{plan.name}</h3>
+                <h3 className="text-sm font-medium text-[#e7eae8] truncate">{plan.name}</h3>
                 {plan.description && (
-                  <p className="text-xs text-[#888888] line-clamp-1">{plan.description}</p>
+                  <p className="text-xs text-[#8f978f] line-clamp-1">{plan.description}</p>
                 )}
               </div>
               <Badge variant={plan.active ? "success" : "muted"} dot className="ml-3 flex-shrink-0">
@@ -84,23 +86,23 @@ export function PlansManager({ plans, gymId }: Props) {
             </div>
 
             <div className="flex items-baseline gap-1 mb-1">
-              <span className="text-2xl font-semibold text-[#f5f5f5] tracking-tight">
+              <span className="text-2xl font-medium text-[#e7eae8] tracking-tight">
                 {formatCurrency(plan.price)}
               </span>
-              <span className="text-xs text-[#888888]">
+              <span className="text-xs text-[#8f978f]">
                 {plan.pricing_model === "recurring"
                   ? `/${formatBillingIntervalSuffix(plan.billing_interval)}`
                   : "upfront"}
               </span>
             </div>
-            <p className="text-[10px] text-[#444444] mb-4 h-3.5">
+            <p className="text-[10px] text-[#646c66] mb-4 h-3.5">
               {plan.pricing_model === "paid_in_full" ? `${plan.term_months}-month term, paid in full` : ""}
             </p>
 
-            <div className="flex items-center justify-between pt-4 border-t border-[rgba(255,255,255,0.06)]">
+            <div className="flex items-center justify-between pt-4 border-t border-[#1f2420]">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs text-[#888888]">{plan.members}</span>
-                <span className="text-xs text-[#444444]">
+                <span className="text-xs text-[#8f978f]">{plan.members}</span>
+                <span className="text-xs text-[#646c66]">
                   {plan.members === 1 ? "member" : "members"}
                 </span>
               </div>
@@ -129,7 +131,7 @@ export function PlansManager({ plans, gymId }: Props) {
         {/* Ghost add card */}
         <button
           onClick={() => setShowCreate(true)}
-          className="rounded-[8px] border border-dashed border-[rgba(255,255,255,0.08)] p-5 flex flex-col items-center justify-center gap-2 text-[#444444] hover:border-[rgba(255,255,255,0.14)] hover:text-[#888888] hover:bg-[rgba(255,255,255,0.02)] transition-all duration-150 min-h-[140px]"
+          className="rounded-[10px] border border-dashed border-[#262b27] p-5 flex flex-col items-center justify-center gap-2 text-[#646c66] hover:border-[#3a403b] hover:text-[#8f978f] hover:bg-[#111412] transition-all duration-150 min-h-[140px]"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.25" />
@@ -160,16 +162,16 @@ export function PlansManager({ plans, gymId }: Props) {
           <Input label="Plan name" name="name" placeholder="Monthly Unlimited" required autoFocus />
           <Textarea label="Description" name="description" placeholder="Full gym access, 24/7" />
 
-          <div className="flex items-center gap-1.5 p-1 rounded-[6px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)]">
+          <div className="flex items-center gap-1.5 p-1 rounded-[7px] bg-[#0d100e] border border-[#1f2420]">
             {(["recurring", "paid_in_full"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setPricingModel(m)}
-                className={`flex-1 py-1.5 text-xs font-medium rounded-[4px] transition-all duration-150 ${
+                className={`flex-1 py-1.5 text-xs font-medium rounded-[5px] transition-all duration-150 ${
                   pricingModel === m
-                    ? "bg-[rgba(232,255,71,0.1)] text-[#e8ff47]"
-                    : "text-[#888888] hover:text-[#f5f5f5]"
+                    ? "bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent)]"
+                    : "text-[#8f978f] hover:text-[#e7eae8]"
                 }`}
               >
                 {m === "recurring" ? "Recurring" : "Paid in full"}
@@ -198,7 +200,7 @@ export function PlansManager({ plans, gymId }: Props) {
             </div>
           )}
 
-          {createError && <p className="text-xs text-[#ef4444]">{createError}</p>}
+          {createError && <p className="text-xs text-[#cf9a90]">{createError}</p>}
         </form>
       </Modal>
 

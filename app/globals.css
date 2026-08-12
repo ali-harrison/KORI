@@ -1,40 +1,74 @@
 @import "tailwindcss";
 
 :root {
-  --background:     #0c0c0c;
-  --surface:        #111111;
-  --surface-raised: #161616;
-  --border:         rgba(255, 255, 255, 0.06);
-  --border-subtle:  rgba(255, 255, 255, 0.04);
+  --canvas:          #0b0d0c;
+  --surface:         #111412;
+  --surface-raised:  #151a16;
+  --surface-raised-2: #171c18;
+  --slideover:       #101311;
+  --input-bg:        #0d100e;
 
-  --text-primary:   #f5f5f5;
-  --text-secondary: #888888;
-  --text-muted:     #444444;
+  --border-shell:    #1b201c;
+  --border-card:     #1f2420;
+  --border-input:    #212623;
+  --border-row:      #191e1a;
+  --border-ghost:    #262b27;
+  --border-ghost-hover: #3a403b;
 
-  --accent:         #e8ff47;
-  --accent-soft:    rgba(232, 255, 71, 0.08);
+  --text-primary:    #e7eae8;
+  --text-secondary:  #b9c0ba;
+  --text-muted:      #8f978f;
+  --text-muted-2:    #99a19b;
+  --text-faint:      #646c66;
+  --text-faintest:   #59615b;
 
-  --success:        #10b981;
-  --warning:        #f59e0b;
-  --danger:         #ef4444;
+  /* Jade accent — swappable at runtime via inline style on :root */
+  --accent:          #54c29b;
 
-  --radius-card:    8px;
-  --radius-input:   6px;
-  --radius-badge:   4px;
+  --success:         #5fc9a4;
+  --success-bg:      rgba(63, 179, 137, 0.10);
+  --success-border:  rgba(63, 179, 137, 0.24);
+
+  --warning:         #cba55e;
+  --warning-bg:      rgba(203, 165, 94, 0.10);
+  --warning-border:  rgba(203, 165, 94, 0.24);
+
+  --danger:          #cf7263;
+  --danger-prose:    #cf9a90;
+  --danger-bg:       rgba(207, 114, 99, 0.12);
+  --danger-border:   rgba(207, 114, 99, 0.27);
+
+  --neutral:         #7d857f;
+  --neutral-bg:      rgba(125, 133, 127, 0.10);
+  --neutral-border:  rgba(125, 133, 127, 0.24);
+
+  --radius-card:  10px;
+  --radius-input: 8px;
+  --radius-badge: 999px;
 }
 
 @theme inline {
-  --color-background:     var(--background);
-  --color-surface:        var(--surface);
-  --color-surface-raised: var(--surface-raised);
-  --color-text-primary:   var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-  --color-text-muted:     var(--text-muted);
-  --color-accent:         var(--accent);
-  --color-success:        var(--success);
-  --color-warning:        var(--warning);
-  --color-danger:         var(--danger);
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-canvas:            var(--canvas);
+  --color-surface:           var(--surface);
+  --color-surface-raised:    var(--surface-raised);
+  --color-surface-raised-2:  var(--surface-raised-2);
+  --color-slideover:         var(--slideover);
+  --color-input-bg:          var(--input-bg);
+
+  --color-text-primary:      var(--text-primary);
+  --color-text-secondary:    var(--text-secondary);
+  --color-text-muted:        var(--text-muted);
+  --color-text-faint:        var(--text-faint);
+  --color-text-faintest:     var(--text-faintest);
+
+  --color-accent:            var(--accent);
+  --color-success:           var(--success);
+  --color-warning:           var(--warning);
+  --color-danger:            var(--danger);
+  --color-neutral:           var(--neutral);
+
+  --font-sans: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-spline-sans-mono), ui-monospace, monospace;
 }
 
 * {
@@ -47,30 +81,61 @@ body {
 }
 
 body {
-  background-color: var(--background);
+  background-color: var(--canvas);
   color: var(--text-primary);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+::placeholder {
+  color: var(--text-faintest);
+  opacity: 1;
 }
 
 ::selection {
-  background: var(--accent-soft);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
   color: var(--accent);
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 3px;
+  background: #232823;
+  border-radius: 8px;
+  border: 3px solid var(--canvas);
 }
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.14);
+
+/* Bilingual text toggle. Server components can't read React context, so
+   ThemeSettingsProvider mirrors its bilingual setting onto this attribute
+   client-side, and the Bilingual component (components/ui/Bilingual.tsx)
+   renders both spans always, letting CSS show/hide instantly with no
+   server round-trip. Defaults to bilingual visible (matches the
+   provider's default), so SSR and first paint are always correct. */
+[data-bilingual="false"] .bilingual-reo {
+  display: none;
+}
+
+[data-motif="false"] .puhoro-motif {
+  display: none;
+}
+
+/* Modal/SlideOver animation. No plugin for animate-in/fade-in utilities is
+   installed, so these are plain keyframes referenced directly via
+   Tailwind's arbitrary animate-[...] syntax — the only animation in the
+   app, per the design system ("no other animation, calm > flashy"). */
+@keyframes so-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes so-slide {
+  from { transform: translateX(28px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }

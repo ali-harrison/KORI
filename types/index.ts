@@ -135,6 +135,52 @@ export interface FailedPaymentAlert {
   failedAt: string;
 }
 
+// Derived display state for a member's direct debit mandate — see
+// getMandateBadgeState in utils/index.ts for the derivation and its
+// documented limits. Not a real GoCardless or DB status column.
+export type MandateBadgeState = "active" | "pending" | "failed" | "cancelled" | "none";
+
+// A real, upcoming direct-debit charge, derived from an active recurring
+// member's next_billing_date. Not a GoCardless "batch" — GoCardless doesn't
+// expose one; see getUpcomingCharges in lib/queries.ts.
+export interface UpcomingCharge {
+  memberId: string;
+  memberName: string;
+  planName: string;
+  amount: number;
+  chargeDate: string;
+}
+
+// One calendar day's collection activity, grouped from our own payments
+// ledger — a proxy for "a GoCardless submission", not real batch/payout
+// data (we don't track those). See getRecentSubmissions in lib/queries.ts.
+export interface SubmissionDaySummary {
+  date: string;
+  chargeCount: number;
+  succeededCount: number;
+  succeededValue: number;
+  failedCount: number;
+  status: "clear" | "partial_failures" | "all_failed";
+}
+
+export interface MandateSummary {
+  active: number;
+  pending: number;
+  failed: number;
+  cancelled: number;
+  none: number;
+  total: number;
+}
+
+// Overview page's "recent activity" feed — derived by merging recent
+// payments and recent member signups (no activity-log table exists). See
+// getRecentActivity in lib/queries.ts.
+export interface ActivityItem {
+  id: string;
+  timestamp: string;
+  text: string;
+}
+
 // ── Form types ───────────────────────────────────────────────────────────────
 
 export type CreatePlanInput =

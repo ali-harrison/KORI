@@ -1,7 +1,9 @@
 import { getGym, getContracts } from "@/lib/queries";
-import { Header } from "@/components/dashboard/Header";
-import { Card, CardHeader, CardTitle, Badge, Button } from "@/components/ui";
+import { Button, DataTable, DataTableRow, EmptyState, Badge } from "@/components/ui";
+import { StatCard } from "@/components/dashboard/StatCard";
 import { formatDate } from "@/utils";
+
+const GRID = "1.8fr 1.4fr 1fr 1fr 1fr 1fr";
 
 export default async function ContractsPage() {
   const gym = await getGym();
@@ -12,139 +14,70 @@ export default async function ContractsPage() {
 
   return (
     <div>
-      <Header
-        title="Contracts"
-        description="Membership agreements"
-        userEmail={gym.email ?? undefined}
-        userInitials={gym.name.slice(0, 2).toUpperCase()}
-        actions={
-          <Button variant="secondary" size="sm">Upload template</Button>
-        }
-      />
-
-      <div className="px-8 py-7 space-y-5">
-        {/* Summary */}
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { label: "Total", value: contracts.length, variant: "default" as const },
-            { label: "Signed", value: signed, variant: "success" as const },
-            { label: "Awaiting signature", value: pending, variant: "warning" as const },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="rounded-[8px] bg-[#111111] border border-[rgba(255,255,255,0.06)] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] px-5 py-4 flex items-center justify-between"
-            >
-              <span className="text-xs text-[#888888]">{stat.label}</span>
-              <span
-                className={`text-xl font-semibold ${
-                  stat.variant === "success"
-                    ? "text-[#10b981]"
-                    : stat.variant === "warning"
-                    ? "text-[#f59e0b]"
-                    : "text-[#f5f5f5]"
-                }`}
-              >
-                {stat.value}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {/* Table */}
-        <Card padding="none">
-          <CardHeader className="px-5 pt-5 pb-4">
-            <CardTitle description="All membership agreements">Contracts</CardTitle>
-          </CardHeader>
-
-          {contracts.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-xs text-[#444444]">No contracts yet.</p>
-              <p className="text-[10px] text-[#444444] mt-1">
-                Contracts are created when members sign up.
-              </p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-[rgba(255,255,255,0.04)]">
-                  {["Member", "Plan", "Sent", "Signed", "Status", ""].map((col) => (
-                    <th
-                      key={col}
-                      className="px-5 py-3 text-left text-[10px] font-medium text-[#444444] tracking-wider uppercase"
-                    >
-                      {col}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {contracts.map((contract, i) => {
-                  const member = contract.member as {
-                    id: string;
-                    first_name: string;
-                    last_name: string;
-                    plan?: { name: string } | null;
-                  };
-                  return (
-                    <tr
-                      key={contract.id}
-                      className={`group transition-colors hover:bg-[rgba(255,255,255,0.02)] ${
-                        i !== contracts.length - 1 ? "border-b border-[rgba(255,255,255,0.04)]" : ""
-                      }`}
-                    >
-                      <td className="px-5 py-3.5">
-                        <a
-                          href={`/dashboard/members/${member.id}`}
-                          className="text-xs text-[#f5f5f5] font-medium hover:text-white transition-colors"
-                        >
-                          {member.first_name} {member.last_name}
-                        </a>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className="text-xs text-[#888888]">
-                          {member.plan?.name ?? "—"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className="text-xs text-[#888888]">
-                          {formatDate(contract.created_at, { day: "numeric", month: "short" })}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span className="text-xs text-[#888888]">
-                          {contract.signed_at
-                            ? formatDate(contract.signed_at, { day: "numeric", month: "short" })
-                            : "—"}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <Badge
-                          variant={contract.status === "signed" ? "success" : "warning"}
-                          dot
-                        >
-                          {contract.status === "signed" ? "Signed" : "Pending"}
-                        </Badge>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                          {contract.status === "pending" && (
-                            <Button variant="ghost" size="sm">Resend</Button>
-                          )}
-                          {contract.status === "signed" && contract.pdf_url && (
-                            <a href={contract.pdf_url} target="_blank" rel="noopener noreferrer">
-                              <Button variant="ghost" size="sm">Download</Button>
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </Card>
+      <div className="flex items-center gap-2.5 mb-5">
+        <span className="text-[17px] font-medium">Contracts</span>
+        <span className="text-[13px] text-[#646c66]">{contracts.length} total</span>
+        <div className="flex-1" />
+        <Button variant="secondary" size="sm">Upload template</Button>
       </div>
+
+      <div className="grid grid-cols-3 gap-4 mb-5">
+        <StatCard label="Total" value={contracts.length} />
+        <StatCard label="Signed" value={signed} variant="success" />
+        <StatCard label="Awaiting signature" value={pending} variant="warning" />
+      </div>
+
+      {contracts.length === 0 ? (
+        <div className="bg-[#111412] border border-[#1f2420] rounded-[10px]">
+          <EmptyState
+            title={{ en: "No contracts yet" }}
+            description="Contracts are created when members sign up."
+          />
+        </div>
+      ) : (
+        <DataTable gridTemplateColumns={GRID} headers={["Member", "Plan", "Sent", "Signed", "Status", ""]}>
+          {contracts.map((contract) => {
+            const member = contract.member as {
+              id: string;
+              first_name: string;
+              last_name: string;
+              plan?: { name: string } | null;
+            };
+            return (
+              <DataTableRow key={contract.id} gridTemplateColumns={GRID}>
+                <a
+                  href={`/dashboard/members/${member.id}`}
+                  className="text-[13px] font-medium text-[#e7eae8] hover:text-[var(--accent)] transition-colors duration-150 truncate"
+                >
+                  {member.first_name} {member.last_name}
+                </a>
+                <div className="text-[13px] text-[#8f978f] truncate">{member.plan?.name ?? "—"}</div>
+                <div className="text-[13px] text-[#8f978f] tabular-nums">
+                  {formatDate(contract.created_at, { day: "numeric", month: "short" })}
+                </div>
+                <div className="text-[13px] text-[#8f978f] tabular-nums">
+                  {contract.signed_at ? formatDate(contract.signed_at, { day: "numeric", month: "short" }) : "—"}
+                </div>
+                <div>
+                  <Badge variant={contract.status === "signed" ? "success" : "warning"} dot>
+                    {contract.status === "signed" ? "Signed" : "Pending"}
+                  </Badge>
+                </div>
+                <div className="text-right">
+                  {contract.status === "pending" && (
+                    <Button variant="ghost" size="sm">Resend</Button>
+                  )}
+                  {contract.status === "signed" && contract.pdf_url && (
+                    <a href={contract.pdf_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="ghost" size="sm">Download</Button>
+                    </a>
+                  )}
+                </div>
+              </DataTableRow>
+            );
+          })}
+        </DataTable>
+      )}
     </div>
   );
 }

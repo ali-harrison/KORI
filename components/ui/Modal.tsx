@@ -63,8 +63,8 @@ export function Modal({
         if (e.target === overlayRef.current) onClose();
       }}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-[rgba(0,0,0,0.7)] backdrop-blur-sm" />
+      {/* Backdrop — dims, no blur, no shadow anywhere per the design system */}
+      <div className="absolute inset-0 bg-[rgba(5,7,6,0.62)] animate-[so-fade_150ms_ease]" />
 
       {/* Panel */}
       <div
@@ -73,30 +73,29 @@ export function Modal({
         aria-labelledby="modal-title"
         className={cn(
           "relative w-full",
-          "bg-[#111111] rounded-[10px]",
-          "border border-[rgba(255,255,255,0.08)]",
-          "shadow-[0_24px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)]",
-          "animate-in fade-in zoom-in-95 duration-150",
+          "bg-[#111412] rounded-[10px]",
+          "border border-[#1f2420]",
+          "animate-[so-fade_150ms_ease]",
           sizeStyles[size]
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-[rgba(255,255,255,0.06)]">
+        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-[#1f2420]">
           <div className="flex flex-col gap-1">
-            <h2 id="modal-title" className="text-sm font-semibold text-[#f5f5f5]">
+            <h2 id="modal-title" className="text-[15px] font-medium text-[#e7eae8]">
               {title}
             </h2>
             {description && (
-              <p className="text-xs text-[#888888]">{description}</p>
+              <p className="text-xs text-[#8f978f]">{description}</p>
             )}
           </div>
           <button
             onClick={onClose}
-            className="ml-4 flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-[4px] text-[#444444] hover:text-[#888888] hover:bg-[rgba(255,255,255,0.06)] transition-all duration-150"
+            className="ml-4 flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-[6px] text-[#646c66] hover:text-[#e7eae8] transition-colors duration-150"
             aria-label="Close"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M1 1L11 11M11 1L1 11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
             </svg>
           </button>
         </div>

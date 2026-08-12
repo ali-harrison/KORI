@@ -1,4 +1,4 @@
-import type { MemberStatus, Plan } from "@/types";
+import type { MemberStatus, Plan, Member, MandateBadgeState } from "@/types";
 
 // ── Currency ─────────────────────────────────────────────────────────────────
 export function formatCurrency(
@@ -60,6 +60,57 @@ export function getMemberStatusColor(status: MemberStatus): string {
   };
   return colors[status];
 }
+
+// ── Mandate status ───────────────────────────────────────────────────────────
+//
+// There's no mandate-status column/enum anywhere in the schema — only
+// gc_mandate_id (nullable) and the member's own status. This derives a
+// display state from those two signals. Two things it can't tell you:
+//   - "pending" is a proxy (mandate created, no payment confirmed yet) —
+//     we never fetch GoCardless's real pending_customer_approval/
+//     pending_submission sub-states.
+//   - "cancelled" reflects OUR status only. Nothing in this app currently
+//     calls GoCardless's cancel-mandate API when an admin cancels a member
+//     locally (only the webhook's mandates.cancelled handler does that,
+//     lib/gocardless-webhook.ts) — so a member showing "cancelled" here may
+//     still have a live mandate at GoCardless. Known gap, not fixed here.
+export function getMandateBadgeState(member: Pick<Member, "gc_mandate_id" | "status">): MandateBadgeState {
+  if (!member.gc_mandate_id) {
+    // Only handleMandateCancelled nulls gc_mandate_id, and it always pairs
+    // that with status:"paused" — so this specific combination is a real,
+    // confirmed cancellation signal, not a guess. Every other null case is
+    // a member who's never been on direct debit at all (cash/manual payer,
+    // or a plan that hasn't been billed yet).
+    return member.status === "paused" ? "cancelled" : "none";
+  }
+  switch (member.status) {
+    case "pending":
+      return "pending";
+    case "active":
+      return "active";
+    case "paused":
+      return "failed"; // can't be a mandate-cancel pause — that always nulls the id above
+    case "cancelled":
+    case "expired":
+      return "cancelled";
+  }
+}
+
+export const MANDATE_STATE_LABEL: Record<MandateBadgeState, string> = {
+  active: "Active",
+  pending: "Pending confirmation",
+  failed: "Failed",
+  cancelled: "Cancelled",
+  none: "Not set up",
+};
+
+export const MANDATE_STATE_VARIANT: Record<MandateBadgeState, "success" | "warning" | "danger" | "muted" | "default"> = {
+  active: "success",
+  pending: "warning",
+  failed: "danger",
+  cancelled: "muted",
+  none: "default",
+};
 
 // ── Plan pricing ─────────────────────────────────────────────────────────────
 const INTERVAL_SUFFIX: Record<Exclude<Plan["billing_interval"], null>, string> = {

@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button, Card, CardTitle, Badge, Modal } from "@/components/ui";
+import { Button, Card, CardTitle, PaymentChip, EmptyState, SlideOver, Bilingual } from "@/components/ui";
 import { Input } from "@/components/ui/Input";
 import { recordPayment } from "@/app/actions/payments";
 import { formatCurrency, formatDate } from "@/utils";
-import type { Payment, PaymentStatus } from "@/types";
+import type { Payment } from "@/types";
+import type { PaymentChipVariant } from "@/components/ui";
 
 interface Props {
   memberId: string;
@@ -13,19 +14,21 @@ interface Props {
   payments: Payment[];
 }
 
-const STATUS_LABEL: Record<PaymentStatus, string> = {
-  succeeded: "Paid",
-  pending: "Pending",
-  failed: "Failed",
-  refunded: "Refunded",
-};
-
-const STATUS_VARIANT: Record<PaymentStatus, "success" | "warning" | "danger" | "default"> = {
-  succeeded: "success",
-  pending: "warning",
-  failed: "danger",
-  refunded: "default",
-};
+// No "retried" chip — we don't track GoCardless retry attempts locally, so
+// there's no real data to back that state (see PaymentChip's own note).
+function paymentDisplay(payment: Payment): { label: string; variant: PaymentChipVariant } {
+  if (payment.provider === "manual") return { label: "Manual", variant: "manual" };
+  switch (payment.status) {
+    case "succeeded":
+      return { label: "Collected", variant: "collected" };
+    case "failed":
+      return { label: "Failed", variant: "failed" };
+    case "pending":
+      return { label: "Pending", variant: "manual" };
+    case "refunded":
+      return { label: "Refunded", variant: "manual" };
+  }
+}
 
 function todayISO(): string {
   return new Date().toISOString().split("T")[0];
@@ -65,39 +68,40 @@ export function PaymentsCard({ memberId, gymId, payments }: Props) {
 
   return (
     <Card padding="none">
-      <div className="px-5 pt-5 pb-4 border-b border-[rgba(255,255,255,0.06)] flex items-center justify-between">
+      <div className="px-5 pt-5 pb-4 border-b border-[#1f2420] flex items-center justify-between">
         <CardTitle description="Billing history">Payments</CardTitle>
         <Button variant="secondary" size="sm" onClick={() => setShowForm(true)}>
-          Record payment
+          <Bilingual reo="Tāpirihia he utu" en="Record payment" />
         </Button>
       </div>
 
       {payments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 text-center">
-          <p className="text-xs text-[#444444]">No payments recorded yet.</p>
-        </div>
+        <EmptyState title={{ reo: "Kāore anō he utu", en: "No payments yet" }} className="py-8" />
       ) : (
-        <div className="divide-y divide-[rgba(255,255,255,0.06)]">
-          {payments.map((payment) => (
-            <div key={payment.id} className="px-5 py-3 flex items-center justify-between gap-3">
-              <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-xs text-[#f5f5f5] font-medium">
-                  {formatCurrency(payment.amount)}
-                </span>
-                <span className="text-[10px] text-[#444444] truncate">
-                  {formatDate(payment.paid_at ?? payment.created_at)}
-                  {payment.note ? ` · ${payment.note}` : ""}
-                </span>
+        <div className="divide-y divide-[#191e1a]">
+          {payments.map((payment) => {
+            const display = paymentDisplay(payment);
+            return (
+              <div key={payment.id} className="px-5 py-3 flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-xs text-[#e7eae8] font-medium">
+                    {formatCurrency(payment.amount)}
+                  </span>
+                  <span className="text-[10px] text-[#646c66] truncate">
+                    {formatDate(payment.paid_at ?? payment.created_at)}
+                    {payment.note ? ` · ${payment.note}` : ""}
+                  </span>
+                </div>
+                <PaymentChip variant={display.variant} className="flex-shrink-0">
+                  {display.label}
+                </PaymentChip>
               </div>
-              <Badge variant={STATUS_VARIANT[payment.status]} dot className="flex-shrink-0">
-                {STATUS_LABEL[payment.status]}
-              </Badge>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      <Modal
+      <SlideOver
         open={showForm}
         onClose={closeForm}
         title="Record payment"
@@ -108,29 +112,27 @@ export function PaymentsCard({ memberId, gymId, payments }: Props) {
               Cancel
             </Button>
             <Button variant="primary" type="submit" form="record-payment-form" loading={isPending}>
-              Record payment
+              <Bilingual reo="Tāpirihia he utu" en="Record payment" />
             </Button>
           </>
         }
       >
         <form id="record-payment-form" onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Amount (NZD)"
-              name="amount"
-              type="number"
-              placeholder="15"
-              min="0.01"
-              step="0.01"
-              required
-              autoFocus
-            />
-            <Input label="Date paid" name="paid_at" type="date" defaultValue={todayISO()} required />
-          </div>
+          <Input
+            label="Amount (NZD)"
+            name="amount"
+            type="number"
+            placeholder="15"
+            min="0.01"
+            step="0.01"
+            required
+            autoFocus
+          />
+          <Input label="Date paid" name="paid_at" type="date" defaultValue={todayISO()} required />
           <Input label="Note (optional)" name="note" placeholder="Cash, bank transfer ref #123" />
-          {error && <p className="text-xs text-[#ef4444]">{error}</p>}
+          {error && <p className="text-xs text-[#cf9a90]">{error}</p>}
         </form>
-      </Modal>
+      </SlideOver>
     </Card>
   );
 }

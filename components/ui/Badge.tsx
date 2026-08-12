@@ -10,21 +10,21 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: "bg-[rgba(255,255,255,0.06)] text-[#888888] border-[rgba(255,255,255,0.08)]",
-  success: "bg-[rgba(16,185,129,0.1)] text-[#10b981] border-[rgba(16,185,129,0.2)]",
-  warning: "bg-[rgba(245,158,11,0.1)] text-[#f59e0b] border-[rgba(245,158,11,0.2)]",
-  danger:  "bg-[rgba(239,68,68,0.1)] text-[#ef4444] border-[rgba(239,68,68,0.2)]",
-  accent:  "bg-[rgba(232,255,71,0.08)] text-[#e8ff47] border-[rgba(232,255,71,0.15)]",
-  muted:   "bg-[rgba(255,255,255,0.03)] text-[#444444] border-[rgba(255,255,255,0.05)]",
+  default: "bg-[rgba(125,133,127,0.10)] text-[#8f978f] border-[rgba(125,133,127,0.20)]",
+  success: "bg-[rgba(63,179,137,0.10)] text-[#5fc9a4] border-[rgba(63,179,137,0.24)]",
+  warning: "bg-[rgba(203,165,94,0.10)] text-[#cba55e] border-[rgba(203,165,94,0.24)]",
+  danger:  "bg-[rgba(207,114,99,0.12)] text-[#cf7263] border-[rgba(207,114,99,0.27)]",
+  accent:  "bg-[color-mix(in_srgb,var(--accent)_10%,transparent)] text-[var(--accent)] border-[color-mix(in_srgb,var(--accent)_25%,transparent)]",
+  muted:   "bg-[rgba(125,133,127,0.06)] text-[#59615b] border-[rgba(125,133,127,0.14)]",
 };
 
 const dotColors: Record<BadgeVariant, string> = {
-  default: "bg-[#888888]",
-  success: "bg-[#10b981]",
-  warning: "bg-[#f59e0b]",
-  danger:  "bg-[#ef4444]",
-  accent:  "bg-[#e8ff47]",
-  muted:   "bg-[#444444]",
+  default: "bg-[#8f978f]",
+  success: "bg-[#5fc9a4]",
+  warning: "bg-[#cba55e]",
+  danger:  "bg-[#cf7263]",
+  accent:  "bg-[var(--accent)]",
+  muted:   "bg-[#59615b]",
 };
 
 export function Badge({
@@ -37,8 +37,8 @@ export function Badge({
     <span
       className={cn(
         "inline-flex items-center gap-1.5",
-        "px-2 py-0.5 text-xs font-medium",
-        "rounded-[4px] border",
+        "px-2.5 py-[3px] text-xs font-normal",
+        "rounded-full border",
         variantStyles[variant],
         className
       )}
