@@ -168,6 +168,7 @@ export type Database = {
           invite_sent_at: string | null;
           start_date: string | null;
           next_billing_date: string | null;
+          cancellation_requested_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -189,6 +190,7 @@ export type Database = {
           invite_sent_at?: string | null;
           start_date?: string | null;
           next_billing_date?: string | null;
+          cancellation_requested_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -210,6 +212,7 @@ export type Database = {
           invite_sent_at?: string | null;
           start_date?: string | null;
           next_billing_date?: string | null;
+          cancellation_requested_at?: string | null;
           created_at?: string;
         };
         Relationships: [];

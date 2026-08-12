@@ -5,19 +5,22 @@ interface MandateBarProps {
   summary: MandateSummary;
 }
 
-const SEGMENT_ORDER: MandateBadgeState[] = ["active", "pending", "failed", "cancelled", "none"];
+const SEGMENT_ORDER: MandateBadgeState[] = ["active", "pending", "cancelling", "failed", "cancelled", "none"];
 
 const SEGMENT_COLOR: Record<MandateBadgeState, string> = {
   active: "#3fb389",
   pending: "#cba55e",
+  cancelling: "#a8823f",
   failed: "#cf7263",
   cancelled: "#7d857f",
   none: "#454c47",
 };
 
-// 5 segments, not the design reference's 4 — "none" (never on direct
-// debit, e.g. cash-paying members) is real data too; silently excluding it
-// while implying the bar represents everyone would be misleading.
+// 6 segments, not the design reference's 4 — "none" (never on direct
+// debit, e.g. cash-paying members) and "cancelling" (GoCardless cancel
+// requested, webhook confirmation still in flight) are both real data too;
+// silently excluding either while implying the bar represents everyone
+// would be misleading.
 export function MandateBar({ summary }: MandateBarProps) {
   const total = summary.total || 1;
 

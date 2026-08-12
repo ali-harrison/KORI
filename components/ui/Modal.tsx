@@ -125,6 +125,7 @@ interface ConfirmModalProps {
   confirmLabel?: string;
   loading?: boolean;
   variant?: "danger" | "primary";
+  error?: string | null;
 }
 
 export function ConfirmModal({
@@ -136,6 +137,7 @@ export function ConfirmModal({
   confirmLabel = "Confirm",
   loading = false,
   variant = "danger",
+  error,
 }: ConfirmModalProps) {
   return (
     <Modal
@@ -155,7 +157,7 @@ export function ConfirmModal({
         </>
       }
     >
-      <div />
+      {error ? <p className="text-xs text-[#cf9a90]">{error}</p> : <div />}
     </Modal>
   );
 }

@@ -74,6 +74,11 @@ export interface Member {
   invite_sent_at: string | null;
   start_date: string | null;
   next_billing_date: string | null;
+  // Set when a local "cancel member" click has told GoCardless to cancel
+  // the subscription+mandate but the confirming mandates.cancelled webhook
+  // hasn't landed yet. Cleared back to null by that webhook. See
+  // lib/member-cancellation.ts and getMandateBadgeState (utils/index.ts).
+  cancellation_requested_at: string | null;
   created_at: string;
 }
 
@@ -138,7 +143,7 @@ export interface FailedPaymentAlert {
 // Derived display state for a member's direct debit mandate — see
 // getMandateBadgeState in utils/index.ts for the derivation and its
 // documented limits. Not a real GoCardless or DB status column.
-export type MandateBadgeState = "active" | "pending" | "failed" | "cancelled" | "none";
+export type MandateBadgeState = "active" | "pending" | "cancelling" | "failed" | "cancelled" | "none";
 
 // A real, upcoming direct-debit charge, derived from an active recurring
 // member's next_billing_date. Not a GoCardless "batch" — GoCardless doesn't
@@ -166,6 +171,7 @@ export interface SubmissionDaySummary {
 export interface MandateSummary {
   active: number;
   pending: number;
+  cancelling: number;
   failed: number;
   cancelled: number;
   none: number;

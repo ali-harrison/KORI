@@ -50,7 +50,12 @@ export default async function MemberDetailPage({
           </h1>
           <p className="text-[13px] text-[#8f978f] mt-[3px]">{member.email}</p>
         </div>
-        <MemberStatusActions memberId={member.id} gymId={gym.id} currentStatus={member.status as MemberStatus} />
+        <MemberStatusActions
+          memberId={member.id}
+          gymId={gym.id}
+          currentStatus={member.status as MemberStatus}
+          mandateState={mandateState}
+        />
       </div>
 
       <div className="grid grid-cols-3 gap-5">

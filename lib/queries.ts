@@ -265,13 +265,13 @@ export async function getMandateSummary(gymId: string): Promise<MandateSummary> 
 
   const { data, error } = await supabase
     .from("members")
-    .select("gc_mandate_id, status")
+    .select("gc_mandate_id, status, cancellation_requested_at")
     .eq("gym_id", gymId);
 
   if (error) throw error;
-  const summary: MandateSummary = { active: 0, pending: 0, failed: 0, cancelled: 0, none: 0, total: 0 };
+  const summary: MandateSummary = { active: 0, pending: 0, cancelling: 0, failed: 0, cancelled: 0, none: 0, total: 0 };
   for (const m of data ?? []) {
-    summary[getMandateBadgeState(m as Pick<Member, "gc_mandate_id" | "status">)] += 1;
+    summary[getMandateBadgeState(m as Pick<Member, "gc_mandate_id" | "status" | "cancellation_requested_at">)] += 1;
     summary.total += 1;
   }
   return summary;

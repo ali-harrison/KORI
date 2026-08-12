@@ -143,3 +143,17 @@ export async function createGoCardlessSubscription(
     links: { mandate: params.mandateId },
   });
 }
+
+// ── Cancellation ─────────────────────────────────────────────────────────────
+//
+// Thin wrappers only — the ordering, idempotency handling (already-
+// cancelled/not-found treated as success), and failure semantics all live
+// in lib/member-cancellation.ts, which is what actually gets unit tested.
+
+export async function cancelGoCardlessSubscription(client: GoCardlessClient, subscriptionId: string) {
+  return client.subscriptions.cancel(subscriptionId, {});
+}
+
+export async function cancelGoCardlessMandate(client: GoCardlessClient, mandateId: string) {
+  return client.mandates.cancel(mandateId, {});
+}

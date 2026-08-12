@@ -74,7 +74,9 @@ export function getMemberStatusColor(status: MemberStatus): string {
 //     locally (only the webhook's mandates.cancelled handler does that,
 //     lib/gocardless-webhook.ts) — so a member showing "cancelled" here may
 //     still have a live mandate at GoCardless. Known gap, not fixed here.
-export function getMandateBadgeState(member: Pick<Member, "gc_mandate_id" | "status">): MandateBadgeState {
+export function getMandateBadgeState(
+  member: Pick<Member, "gc_mandate_id" | "status" | "cancellation_requested_at">
+): MandateBadgeState {
   if (!member.gc_mandate_id) {
     // Only handleMandateCancelled nulls gc_mandate_id, and it always pairs
     // that with status:"paused" — so this specific combination is a real,
@@ -82,6 +84,17 @@ export function getMandateBadgeState(member: Pick<Member, "gc_mandate_id" | "sta
     // a member who's never been on direct debit at all (cash/manual payer,
     // or a plan that hasn't been billed yet).
     return member.status === "paused" ? "cancelled" : "none";
+  }
+  // A cancellation has been sent to GoCardless (subscription + mandate
+  // cancel calls) but the confirming mandates.cancelled webhook hasn't
+  // landed yet, so gc_mandate_id is still populated. Must not read as
+  // "Active" (misleading — it's being torn down) or "Cancelled" (a lie —
+  // GC may still show it live for a few seconds/minutes). See
+  // lib/member-cancellation.ts. Checked ahead of the status switch below
+  // so it wins regardless of whatever raw status the member was in when
+  // cancellation was requested.
+  if (member.cancellation_requested_at) {
+    return "cancelling";
   }
   switch (member.status) {
     case "pending":
@@ -99,6 +112,7 @@ export function getMandateBadgeState(member: Pick<Member, "gc_mandate_id" | "sta
 export const MANDATE_STATE_LABEL: Record<MandateBadgeState, string> = {
   active: "Active",
   pending: "Pending confirmation",
+  cancelling: "Cancelling",
   failed: "Failed",
   cancelled: "Cancelled",
   none: "Not set up",
@@ -107,6 +121,7 @@ export const MANDATE_STATE_LABEL: Record<MandateBadgeState, string> = {
 export const MANDATE_STATE_VARIANT: Record<MandateBadgeState, "success" | "warning" | "danger" | "muted" | "default"> = {
   active: "success",
   pending: "warning",
+  cancelling: "warning",
   failed: "danger",
   cancelled: "muted",
   none: "default",

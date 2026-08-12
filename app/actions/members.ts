@@ -3,12 +3,18 @@
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getGym, getMember } from "@/lib/queries";
+import { getGoCardlessGymClient } from "@/lib/gocardless";
+import { cancelMemberBilling } from "@/lib/member-cancellation";
 import type { MemberStatus } from "@/types";
 
+// Pause/reactivate only — this never claims anything about the GoCardless
+// mandate, so it stays a plain status write. Cancel is handled separately
+// by cancelMember below, which has to talk to GoCardless first.
 export async function updateMemberStatus(
   memberId: string,
   gymId: string,
-  status: MemberStatus
+  status: Exclude<MemberStatus, "cancelled">
 ): Promise<{ error: string } | { success: true }> {
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -25,6 +31,37 @@ export async function updateMemberStatus(
   revalidatePath(`/dashboard/members/${memberId}`);
   revalidatePath("/dashboard/members");
   revalidatePath("/dashboard");
+  return { success: true };
+}
+
+// Cancels a member: stops future billing AND collection authority at
+// GoCardless (subscription then mandate — see lib/member-cancellation.ts),
+// then marks the cancellation as requested. It does NOT set status to
+// "cancelled" itself for a direct-debit member — the mandates.cancelled
+// webhook is what confirms the cancellation actually happened at
+// GoCardless and writes the terminal state. See getMandateBadgeState for
+// the resulting "Cancelling" transitional badge.
+export async function cancelMember(
+  memberId: string,
+  gymId: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
+
+  const [gym, member] = await Promise.all([getGym(), getMember(memberId, gymId)]);
+  if (!member) return { error: "Member not found" };
+
+  const gcClient =
+    member.gc_mandate_id && gym.gc_access_token ? getGoCardlessGymClient(gym.gc_access_token) : null;
+
+  const result = await cancelMemberBilling(member, gymId, supabase, gcClient);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/dashboard/members/${memberId}`);
+  revalidatePath("/dashboard/members");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/billing");
   return { success: true };
 }
 

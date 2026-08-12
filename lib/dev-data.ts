@@ -78,7 +78,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: "CU00SARAH01", gc_mandate_id: "MD00SARAH01", gc_subscription_id: "SB00SARAH01",
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-01-20", next_billing_date: "2025-06-20", created_at: "2025-01-20T00:00:00Z",
+    start_date: "2025-01-20", next_billing_date: "2025-06-20", cancellation_requested_at: null, created_at: "2025-01-20T00:00:00Z",
   },
   {
     id: "mem-2", gym_id: "dev-gym-id", user_id: null,
@@ -87,7 +87,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: "CU00LIAM002", gc_mandate_id: "MD00LIAM002", gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-02-01", next_billing_date: null, created_at: "2025-02-01T00:00:00Z",
+    start_date: "2025-02-01", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-02-01T00:00:00Z",
   },
   {
     id: "mem-3", gym_id: "dev-gym-id", user_id: null,
@@ -96,7 +96,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: "CU00AROHA03", gc_mandate_id: "MD00AROHA03", gc_subscription_id: "SB00AROHA03",
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-02-14", next_billing_date: "2025-06-14", created_at: "2025-02-14T00:00:00Z",
+    start_date: "2025-02-14", next_billing_date: "2025-06-14", cancellation_requested_at: null, created_at: "2025-02-14T00:00:00Z",
   },
   {
     id: "mem-4", gym_id: "dev-gym-id", user_id: null,
@@ -105,7 +105,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: "CU00JAMES04", gc_mandate_id: "MD00JAMES04", gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-03-05", next_billing_date: null, created_at: "2025-03-05T00:00:00Z",
+    start_date: "2025-03-05", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-03-05T00:00:00Z",
   },
   {
     id: "mem-5", gym_id: "dev-gym-id", user_id: null,
@@ -114,7 +114,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: "CU00MIACH05", gc_mandate_id: "MD00MIACH05", gc_subscription_id: "SB00MIACH05",
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-05-10", next_billing_date: "2025-06-10", created_at: "2025-05-10T00:00:00Z",
+    start_date: "2025-05-10", next_billing_date: "2025-06-10", cancellation_requested_at: null, created_at: "2025-05-10T00:00:00Z",
   },
   {
     id: "mem-6", gym_id: "dev-gym-id", user_id: null,
@@ -123,7 +123,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-03-20", next_billing_date: null, created_at: "2025-03-20T00:00:00Z",
+    start_date: "2025-03-20", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-03-20T00:00:00Z",
   },
   {
     id: "mem-7", gym_id: "dev-gym-id", user_id: null,
@@ -132,7 +132,7 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-01-28", next_billing_date: null, created_at: "2025-01-28T00:00:00Z",
+    start_date: "2025-01-28", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-01-28T00:00:00Z",
   },
   {
     // Only member showing the "cancelled mandate" state (gc_mandate_id
@@ -144,7 +144,20 @@ export const DEV_MEMBERS: MemberWithPlan[] = [
     stripe_customer_id: null, stripe_subscription_id: null,
     gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
     invite_token: null, invite_sent_at: null,
-    start_date: "2025-04-02", next_billing_date: null, created_at: "2025-04-02T00:00:00Z",
+    start_date: "2025-04-02", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-04-02T00:00:00Z",
+  },
+  {
+    // Only member showing the "cancelling" state: a cancel was sent to
+    // GoCardless (cancellation_requested_at set) but gc_mandate_id is
+    // still populated because the confirming mandates.cancelled webhook
+    // hasn't landed yet — see getMandateBadgeState.
+    id: "mem-9", gym_id: "dev-gym-id", user_id: null,
+    first_name: "Ngahuia", last_name: "Reid", email: "ngahuia.reid@example.com", phone: "+64 22 445 7810",
+    plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "active",
+    stripe_customer_id: null, stripe_subscription_id: null,
+    gc_customer_id: "CU00NGAHU09", gc_mandate_id: "MD00NGAHU09", gc_subscription_id: "SB00NGAHU09",
+    invite_token: null, invite_sent_at: null,
+    start_date: "2025-04-18", next_billing_date: "2025-06-18", cancellation_requested_at: "2025-06-12T10:15:00Z", created_at: "2025-04-18T00:00:00Z",
   },
 ];
 
@@ -224,11 +237,12 @@ export const DEV_RECENT_SUBMISSIONS: SubmissionDaySummary[] = [
   { date: "2025-06-06", chargeCount: 1, succeededCount: 1, succeededValue: 15, failedCount: 0, status: "clear" },
 ];
 
-// Matches DEV_MEMBERS' gc_mandate_id/status combinations exactly (see
-// getMandateBadgeState): active × 3 (mem-1, mem-2, mem-3), pending × 1
-// (mem-5), failed × 1 (mem-4), cancelled × 1 (mem-8), none × 2 (mem-6, mem-7).
+// Matches DEV_MEMBERS' gc_mandate_id/status/cancellation_requested_at
+// combinations exactly (see getMandateBadgeState): active × 3 (mem-1,
+// mem-2, mem-3), pending × 1 (mem-5), cancelling × 1 (mem-9), failed × 1
+// (mem-4), cancelled × 1 (mem-8), none × 2 (mem-6, mem-7).
 export const DEV_MANDATE_SUMMARY: MandateSummary = {
-  active: 3, pending: 1, failed: 1, cancelled: 1, none: 2, total: 8,
+  active: 3, pending: 1, cancelling: 1, failed: 1, cancelled: 1, none: 2, total: 9,
 };
 
 export const DEV_ACTIVITY: ActivityItem[] = [
