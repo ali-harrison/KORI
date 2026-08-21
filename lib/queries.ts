@@ -343,7 +343,12 @@ export async function getMembers(gymId: string): Promise<MemberWithPlan[]> {
 }
 
 export async function getMember(memberId: string, gymId: string): Promise<MemberWithPlan | null> {
-  if (DEV_BYPASS) return DEV.DEV_MEMBERS.find((m) => m.id === memberId) ?? DEV.DEV_MEMBERS[0];
+  // No fallback to DEV_MEMBERS[0] here on purpose — every real call site
+  // passes an id sourced from an actual rendered member, so an unmatched id
+  // means a genuinely bad/stale link and should 404 in dev mode exactly like
+  // it does against a real database (member-detail page calls notFound()),
+  // not silently substitute a different member's data.
+  if (DEV_BYPASS) return DEV.DEV_MEMBERS.find((m) => m.id === memberId) ?? null;
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
