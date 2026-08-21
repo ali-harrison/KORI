@@ -172,14 +172,23 @@ async function handleMandateCancelled(event: Event, supabase: AdminClient): Prom
   // pause the member so the dashboard's "Direct debit" state stops
   // claiming a mandate that no longer exists. gc_subscription_id is
   // cleared too since a subscription can't outlive the mandate it runs
-  // against. Matched on the specific mandate id (not just member id) so a
-  // stale, out-of-order redelivery for a mandate this member has since
-  // replaced can't clobber their current one — the WHERE simply won't
-  // match once gc_mandate_id has moved on, making this naturally safe to
-  // reprocess or receive out of order.
+  // against. cancellation_requested_at is cleared here too — this is the
+  // confirmation that closes out whatever in-flight cancel request set it
+  // (lib/member-cancellation.ts), and leaving it stuck non-null would wrongly
+  // read as "still cancelling" if this member ever gets a new mandate later
+  // (getMandateBadgeState checks it ahead of gc_mandate_id). Matched on the
+  // specific mandate id (not just member id) so a stale, out-of-order
+  // redelivery for a mandate this member has since replaced can't clobber
+  // their current one — the WHERE simply won't match once gc_mandate_id has
+  // moved on, making this naturally safe to reprocess or receive out of order.
   const { data, error } = await supabase
     .from("members")
-    .update({ gc_mandate_id: null, gc_subscription_id: null, status: "paused" })
+    .update({
+      gc_mandate_id: null,
+      gc_subscription_id: null,
+      status: "paused",
+      cancellation_requested_at: null,
+    })
     .eq("gc_mandate_id", mandateId)
     .select("id");
 

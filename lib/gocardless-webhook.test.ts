@@ -105,3 +105,73 @@ describe("handleGoCardlessEvent — payments.confirmed idempotency", () => {
     expect(memberStatusUpdates).toEqual([{ id: "mem-1", status: "active" }]);
   });
 });
+
+// Minimal fake of the "members" table shape handleMandateCancelled uses —
+// captures what gets passed to .update() so the test can assert on the
+// exact payload rather than just "it didn't throw".
+function createFakeSupabaseForMandateCancel(matchingMemberIds: string[]) {
+  const updates: Array<Record<string, unknown>> = [];
+
+  const client = {
+    from(table: string) {
+      if (table !== "members") throw new Error(`Unexpected table: ${table}`);
+      return {
+        update: (values: Record<string, unknown>) => ({
+          eq: (_col: string, _value: string) => ({
+            select: async () => {
+              updates.push(values);
+              return {
+                data: matchingMemberIds.map((id) => ({ id })),
+                error: null,
+              };
+            },
+          }),
+        }),
+      };
+    },
+  };
+
+  return { client: client as unknown as AdminClient, updates };
+}
+
+describe("handleGoCardlessEvent — mandates.cancelled", () => {
+  it("clears gc_mandate_id, gc_subscription_id, and cancellation_requested_at together", async () => {
+    const { client, updates } = createFakeSupabaseForMandateCancel(["mem-1"]);
+
+    const event = {
+      id: "EV999",
+      resource_type: "mandates",
+      action: "cancelled",
+      links: { mandate: "MD123" },
+    } as Event;
+
+    await handleGoCardlessEvent(event, client, null);
+
+    // cancellation_requested_at must be cleared here, not just gc_mandate_id/
+    // gc_subscription_id/status — otherwise a member who later gets a brand
+    // new mandate would still read as "cancelling" forever, since
+    // getMandateBadgeState checks this field ahead of gc_mandate_id.
+    expect(updates).toEqual([
+      {
+        gc_mandate_id: null,
+        gc_subscription_id: null,
+        status: "paused",
+        cancellation_requested_at: null,
+      },
+    ]);
+  });
+
+  it("no-ops cleanly when no member currently holds the cancelled mandate", async () => {
+    const { client, updates } = createFakeSupabaseForMandateCancel([]);
+
+    const event = {
+      id: "EV1000",
+      resource_type: "mandates",
+      action: "cancelled",
+      links: { mandate: "MD_STALE" },
+    } as Event;
+
+    await expect(handleGoCardlessEvent(event, client, null)).resolves.toBeUndefined();
+    expect(updates).toHaveLength(1);
+  });
+});

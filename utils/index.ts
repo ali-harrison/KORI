@@ -69,11 +69,10 @@ export function getMemberStatusColor(status: MemberStatus): string {
 //   - "pending" is a proxy (mandate created, no payment confirmed yet) —
 //     we never fetch GoCardless's real pending_customer_approval/
 //     pending_submission sub-states.
-//   - "cancelled" reflects OUR status only. Nothing in this app currently
-//     calls GoCardless's cancel-mandate API when an admin cancels a member
-//     locally (only the webhook's mandates.cancelled handler does that,
-//     lib/gocardless-webhook.ts) — so a member showing "cancelled" here may
-//     still have a live mandate at GoCardless. Known gap, not fixed here.
+//   - "cancelled" reflects OUR status only, same as any other locally-
+//     derived state — see lib/member-cancellation.ts for how it gets there
+//     (calls GoCardless first, then waits on the mandates.cancelled webhook
+//     to confirm before this reads "cancelled" rather than "cancelling").
 export function getMandateBadgeState(
   member: Pick<Member, "gc_mandate_id" | "status" | "cancellation_requested_at">
 ): MandateBadgeState {

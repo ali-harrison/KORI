@@ -80,10 +80,15 @@ export async function GET(request: NextRequest) {
 
   // Save the customer + mandate immediately — fulfil() succeeded, so this is
   // real GoCardless state regardless of what happens with the subscription
-  // step below.
+  // step below. cancellation_requested_at is cleared too: a member who
+  // cancelled previously and is now going through a fresh billing request
+  // has, by definition, nothing in flight to cancel anymore — leaving a
+  // stale value here would make getMandateBadgeState read this brand-new
+  // mandate as still "Cancelling" forever (it checks that field ahead of
+  // gc_mandate_id).
   const { error: updateError } = await supabase
     .from("members")
-    .update({ gc_customer_id: gcCustomerId, gc_mandate_id: gcMandateId })
+    .update({ gc_customer_id: gcCustomerId, gc_mandate_id: gcMandateId, cancellation_requested_at: null })
     .eq("id", memberId);
 
   if (updateError) {

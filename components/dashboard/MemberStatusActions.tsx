@@ -104,7 +104,7 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
         onClose={closeConfirm}
         onConfirm={handleConfirm}
         title="Reactivate membership?"
-        description="This will set the member's status back to active."
+        description="This sets the member's status back to active but does not restore billing. If they don't already have a live GoCardless mandate, send them a new billing request separately."
         confirmLabel="Reactivate"
         loading={isPending}
         variant="primary"
