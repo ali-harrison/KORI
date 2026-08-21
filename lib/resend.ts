@@ -48,34 +48,6 @@ function renderEmailShell({
   `;
 }
 
-// ── Welcome email sent to a new member after signup ──────────────────────────
-export async function sendWelcomeEmail({
-  to,
-  memberName,
-  gymName,
-  portalUrl,
-}: {
-  to: string;
-  memberName: string;
-  gymName: string;
-  portalUrl: string;
-}) {
-  return getResend().emails.send({
-    from: FROM,
-    to,
-    subject: `Welcome to ${gymName}`,
-    html: `
-      <p>Hi ${memberName},</p>
-      <p>You're now a member of <strong>${gymName}</strong>. Welcome!</p>
-      <p>
-        <a href="${portalUrl}" style="background:#e8ff47;color:#0c0c0c;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;">
-          View Your Account
-        </a>
-      </p>
-    `,
-  });
-}
-
 // ── Membership contract — the owner-edited template now renders into the
 // attached PDF (lib/contract-pdf.tsx), not the email body. This body is
 // fixed, short notice text, not template-driven. ─────────────────────────

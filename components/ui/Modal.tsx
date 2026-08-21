@@ -20,6 +20,9 @@ const sizeStyles = {
   lg: "max-w-2xl",
 };
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Modal({
   open,
   onClose,
@@ -30,6 +33,7 @@ export function Modal({
   size = "md",
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -40,6 +44,48 @@ export function Modal({
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [open, onClose]);
+
+  // Focus trap: keeps Tab/Shift+Tab cycling within the panel instead of
+  // leaking to whatever's behind the backdrop — a hand-rolled dialog has no
+  // native focus containment the way <dialog> would. Moves initial focus
+  // into the panel on open (an explicit autoFocus input inside, if any,
+  // still wins — this only fires if nothing already grabbed focus) and
+  // restores it to whatever triggered the modal on close, so closing a
+  // modal never strands keyboard/screen-reader focus on the document body.
+  useEffect(() => {
+    if (!open) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+
+    const panel = panelRef.current;
+    if (panel && !panel.contains(document.activeElement)) {
+      const first = panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      (first ?? panel).focus();
+    }
+
+    function handleTab(e: KeyboardEvent) {
+      if (e.key !== "Tab" || !panel) return;
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    document.addEventListener("keydown", handleTab);
+
+    return () => {
+      document.removeEventListener("keydown", handleTab);
+      previouslyFocused?.focus();
+    };
+  }, [open]);
 
   // Prevent body scroll
   useEffect(() => {
@@ -68,11 +114,13 @@ export function Modal({
 
       {/* Panel */}
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
+        tabIndex={-1}
         className={cn(
-          "relative w-full",
+          "relative w-full outline-none",
           "bg-[#111412] rounded-[10px]",
           "border border-[#1f2420]",
           "animate-[so-fade_150ms_ease]",

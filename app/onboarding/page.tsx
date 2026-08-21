@@ -23,19 +23,19 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0c0c0c] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#0b0d0c] flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="flex items-center gap-2.5 mb-10">
-          <div className="w-8 h-8 rounded-[7px] bg-[#e8ff47] flex items-center justify-center">
-            <span className="text-[11px] font-black text-[#0c0c0c] tracking-tight">KG</span>
+          <div className="w-7 h-7 rounded-[7px] bg-[#151a16] border border-[#232823] flex items-center justify-center">
+            <span className="text-[10px] font-medium text-[var(--accent)]">KG</span>
           </div>
-          <span className="text-sm font-semibold text-[#f5f5f5]">KORI/GYM</span>
+          <span className="text-sm font-medium text-[#e7eae8]">KORI/GYM</span>
         </div>
 
         <div className="space-y-6">
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold text-[#f5f5f5]">Set up your gym</h1>
-            <p className="text-sm text-[#888888]">Tell us about your gym to get started.</p>
+            <h1 className="text-xl font-medium text-[#e7eae8]">Set up your gym</h1>
+            <p className="text-sm text-[#8f978f]">Tell us about your gym to get started.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -54,7 +54,7 @@ export default function OnboardingPage() {
               <Input label="Phone" name="phone" type="tel" placeholder="+64 21 555 0100" />
               <Input label="Gym email" name="email" type="email" placeholder="info@gym.co.nz" />
             </div>
-            {error && <p className="text-xs text-[#ef4444]">{error}</p>}
+            {error && <p className="text-xs text-[#cf7263]">{error}</p>}
             <div className="pt-2">
               <Button
                 variant="primary"
@@ -69,7 +69,7 @@ export default function OnboardingPage() {
             </div>
           </form>
 
-          <p className="text-xs text-[#444444] text-center">
+          <p className="text-xs text-[#646c66] text-center">
             You can update these details anytime in Settings.
           </p>
         </div>

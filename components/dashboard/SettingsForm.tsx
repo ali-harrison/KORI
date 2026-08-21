@@ -158,61 +158,6 @@ export function SettingsForm({ gym }: Props) {
 
       <ContractTemplateBuilder gym={gym} />
       <ReminderTemplateBuilder gym={gym} />
-
-      {/* Notifications */}
-      <Card>
-        <CardHeader className="pb-5 mb-5">
-          <CardTitle description="Email alert preferences">Notifications</CardTitle>
-        </CardHeader>
-        <div className="space-y-1">
-          {[
-            { label: "Payment failed", description: "Alert when a member payment fails", enabled: true },
-            { label: "New member signup", description: "Notify when someone joins", enabled: true },
-            { label: "Contract signed", description: "Notify when a contract is signed", enabled: false },
-            { label: "Membership expiring soon", description: "7 days before expiry", enabled: true },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="flex items-center justify-between py-3 border-b border-[#191e1a] last:border-0"
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium text-[#e7eae8]">{item.label}</span>
-                <span className="text-[10px] text-[#646c66]">{item.description}</span>
-              </div>
-              <button
-                className={`relative rounded-full border transition-all duration-150 flex-shrink-0 ${
-                  item.enabled
-                    ? "bg-[color-mix(in_srgb,var(--accent)_15%,transparent)] border-[color-mix(in_srgb,var(--accent)_30%,transparent)]"
-                    : "bg-[#151a16] border-[#232823]"
-                }`}
-                style={{ width: 32, height: 18 }}
-              >
-                <span
-                  className={`absolute top-[3px] w-3 h-3 rounded-full transition-all duration-150 ${
-                    item.enabled ? "left-[17px] bg-[var(--accent)]" : "left-[3px] bg-[#646c66]"
-                  }`}
-                />
-              </button>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Danger zone */}
-      <Card>
-        <CardHeader className="pb-5 mb-5">
-          <CardTitle description="Irreversible actions">Danger Zone</CardTitle>
-        </CardHeader>
-        <div className="flex items-center justify-between p-4 rounded-[8px] border border-[rgba(207,114,99,0.20)] bg-[rgba(207,114,99,0.06)]">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs font-medium text-[#e7eae8]">Delete gym</span>
-            <span className="text-[10px] text-[#8f978f]">
-              Permanently delete all data. Cannot be undone.
-            </span>
-          </div>
-          <Button variant="danger" size="sm">Delete gym</Button>
-        </div>
-      </Card>
     </div>
   );
 }
