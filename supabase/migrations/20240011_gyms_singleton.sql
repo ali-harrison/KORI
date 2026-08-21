@@ -1,0 +1,22 @@
+-- ============================================================
+-- KORI/GYM — Enforce the single-gym pilot constraint at the DB layer
+-- ============================================================
+--
+-- app/actions/gym.ts:createGym already blocks a second gym via a
+-- SELECT-count-then-insert check, but that's a TOCTOU race: two concurrent
+-- createGym calls before any gym exists can both read count=0, both pass,
+-- and both insert (if they use different names/slugs, gyms.slug's own
+-- unique constraint won't catch it — that only blocks a same-name
+-- collision). This unique index on a constant expression makes "at most
+-- one gyms row, ever" a real DB guarantee instead of an app-level
+-- best-effort check — a second concurrent insert now fails with a unique
+-- violation (23505), which createGym catches and turns into the same
+-- friendly "single gym" error message it already returns for the
+-- count-check path.
+--
+-- Coupled to the same single-tenant pilot decision as the app-level check
+-- (see that comment in app/actions/gym.ts) — drop this index alongside
+-- removing that check if this ever needs to support real multi-tenant
+-- onboarding again.
+
+create unique index idx_gyms_singleton on gyms ((true));

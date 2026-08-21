@@ -8,6 +8,28 @@ import { getGoCardlessGymClient } from "@/lib/gocardless";
 import { cancelMemberBilling } from "@/lib/member-cancellation";
 import type { MemberStatus } from "@/types";
 
+// Shared by createMember and assignMemberPlan — a <select> only ever lists
+// this gym's own plans, but the action itself has no way to know that
+// without checking: members.plan_id's FK just requires the row to exist
+// somewhere, not that it belongs to this gym, and FK checks run
+// independent of RLS. Confirming it here closes that gap rather than
+// trusting the client. Returns true if planId is empty (no plan) or a
+// real plan belonging to gymId; false otherwise.
+async function isValidPlanForGym(
+  supabase: Awaited<ReturnType<typeof createServerSupabaseClient>>,
+  planId: string | null,
+  gymId: string
+): Promise<boolean> {
+  if (!planId) return true;
+  const { data: plan } = await supabase
+    .from("plans")
+    .select("id")
+    .eq("id", planId)
+    .eq("gym_id", gymId)
+    .maybeSingle();
+  return !!plan;
+}
+
 // Pause/reactivate only — this never claims anything about the GoCardless
 // mandate, so it stays a plain status write. Cancel is handled separately
 // by cancelMember below, which has to talk to GoCardless first.
@@ -92,15 +114,22 @@ export async function createMember(
   const last_name = (formData.get("last_name") as string)?.trim();
   const email = (formData.get("email") as string)?.trim();
   const phone = (formData.get("phone") as string)?.trim();
-  const plan_id = formData.get("plan_id") as string;
+  const plan_id = (formData.get("plan_id") as string) || null;
 
   if (!first_name || !last_name || !email) {
     return { error: "First name, last name, and email are required" };
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { error: "Enter a valid email address" };
   }
 
   if (DEV_BYPASS) {
     console.log(`[dev] Skipping write — createMember(${gymId}, ${email})`);
     return { success: true };
+  }
+
+  if (!(await isValidPlanForGym(supabase, plan_id, gymId))) {
+    return { error: "Invalid plan selected" };
   }
 
   // Duplicate email within a gym is enforced by idx_members_gym_email_unique
@@ -127,5 +156,41 @@ export async function createMember(
 
   revalidatePath("/dashboard/members");
   revalidatePath("/dashboard");
+  return { success: true };
+}
+
+// Assigns or changes a member's plan — a plain plan_id write, same as
+// pause/reactivate is a plain status write. Billing itself (GoCardless
+// subscription amount, next charge) isn't touched here; if the member has
+// an active mandate, reconciling it against the new plan's price is a
+// separate, real-money action for later, not implied by this one.
+export async function assignMemberPlan(
+  memberId: string,
+  gymId: string,
+  planId: string | null
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
+
+  if (DEV_BYPASS) {
+    console.log(`[dev] Skipping write — assignMemberPlan(${memberId}, ${planId})`);
+    return { success: true };
+  }
+
+  if (!(await isValidPlanForGym(supabase, planId, gymId))) {
+    return { error: "Invalid plan selected" };
+  }
+
+  const { error } = await supabase
+    .from("members")
+    .update({ plan_id: planId })
+    .eq("id", memberId)
+    .eq("gym_id", gymId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath(`/dashboard/members/${memberId}`);
+  revalidatePath("/dashboard/members");
   return { success: true };
 }

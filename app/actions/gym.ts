@@ -54,7 +54,16 @@ export async function createGym(formData: FormData) {
     email: email?.trim() || null,
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    // 23505 here means idx_gyms_singleton (20240011) rejected a second
+    // concurrent insert that slipped past the count check above — the
+    // same outcome as the check catching it, just discovered a moment
+    // later. Same friendly message either way.
+    if (error.code === "23505") {
+      return { error: "This pilot is configured for a single gym. Contact the admin if you need access." };
+    }
+    return { error: error.message };
+  }
 
   redirect("/dashboard");
 }

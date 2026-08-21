@@ -1,14 +1,12 @@
 import { notFound } from "next/navigation";
-import { getGym, getMember, getMemberContracts, getMemberPayments } from "@/lib/queries";
-import { Card, CardTitle, Badge, Button } from "@/components/ui";
+import { getGym, getMember, getMemberContracts, getMemberPayments, getPlans } from "@/lib/queries";
+import { Card, CardTitle, Badge } from "@/components/ui";
 import { MemberStatusActions } from "@/components/dashboard/MemberStatusActions";
 import { PaymentsCard } from "@/components/dashboard/PaymentsCard";
-import { DirectDebitSetup } from "@/components/dashboard/DirectDebitSetup";
+import { MembershipCard } from "@/components/dashboard/MembershipCard";
 import { ContractActions } from "@/components/dashboard/ContractActions";
 import {
   formatDate,
-  formatCurrency,
-  formatBillingIntervalSuffix,
   getInitials,
   getMandateBadgeState,
   MANDATE_STATE_LABEL,
@@ -35,9 +33,10 @@ export default async function MemberDetailPage({
 
   if (!member) notFound();
 
-  const [contracts, payments] = await Promise.all([
+  const [contracts, payments, plans] = await Promise.all([
     getMemberContracts(member.id),
     getMemberPayments(member.id),
+    getPlans(gym.id),
   ]);
   const latestContract = contracts[0] ?? null;
   const mandateState = getMandateBadgeState(member);
@@ -120,38 +119,7 @@ export default async function MemberDetailPage({
 
         {/* Right — plan + contract */}
         <div className="space-y-5">
-          <Card>
-            <CardTitle description="Current plan">Membership</CardTitle>
-            {member.plan ? (
-              <>
-                <div className="mt-4 p-4 rounded-[8px] bg-[#0d100e] border border-[#1f2420]">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-0.5">
-                      <span className="text-sm font-medium text-[#e7eae8]">{member.plan.name}</span>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-lg font-medium text-[#e7eae8]">
-                          {formatCurrency(member.plan.price)}
-                        </span>
-                        <span className="text-xs text-[#8f978f]">
-                          {member.plan.pricing_model === "recurring"
-                            ? `/${formatBillingIntervalSuffix(member.plan.billing_interval)}`
-                            : `upfront (${member.plan.term_months} mo)`}
-                        </span>
-                      </div>
-                    </div>
-                    <Badge variant="accent">Active</Badge>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" className="w-full mt-3">Change plan</Button>
-                <DirectDebitSetup memberId={member.id} hasMandate={!!member.gc_mandate_id} />
-              </>
-            ) : (
-              <div className="mt-4 flex flex-col items-center justify-center py-6 text-center gap-2">
-                <p className="text-xs text-[#646c66]">No plan assigned.</p>
-                <Button variant="secondary" size="sm">Assign plan</Button>
-              </div>
-            )}
-          </Card>
+          <MembershipCard member={member} gymId={gym.id} plans={plans} />
 
           <Card>
             <CardTitle description="Membership agreement">Contract</CardTitle>
