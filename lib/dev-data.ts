@@ -6,7 +6,8 @@ import { toLocalISODate } from "@/utils";
 // the demo never goes stale. Nothing here is a pre-computed total — every
 // number on screen is derived from these rows by lib/dev-store.ts, so the
 // dashboard, member list and billing page can't contradict each other.
-// Emails use example.com so no fixture can ever be a real person's address.
+// Everything is made up. Emails use example.com, which is reserved and can
+// never belong to anyone.
 
 export const DEMO_GYM_ID = "dev-gym-id";
 export const DEMO_USER = { id: "dev-user-id", email: "owner@example.com" };

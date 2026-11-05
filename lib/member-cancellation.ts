@@ -60,7 +60,7 @@ async function cancelStep(fn: () => Promise<unknown>): Promise<StepOutcome> {
 
 // Cancels a member's future billing and collection authority at
 // GoCardless, then marks the cancellation as requested locally. Ordering
-// is deliberate and explicit (see the task this shipped under): the
+// is deliberate and explicit: the
 // subscription (future scheduled payments) is cancelled before the
 // mandate (authority to collect at all), because a member can still be
 // charged one-off against a live mandate even with no subscription

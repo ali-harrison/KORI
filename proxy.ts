@@ -1,10 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isDemoMode, isPublicDemo } from "./lib/demo-mode";
 
 export async function proxy(request: NextRequest) {
-  // Gated on NODE_ENV so this can never disable auth in a production
-  // build/start, even if DEV_BYPASS=true leaks into a production environment.
-  if (process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true") {
+  if (isDemoMode()) {
+    if (isPublicDemo()) {
+      const { pathname } = request.nextUrl;
+      // Nothing to sign in to, and no GoCardless or Supabase behind these.
+      if (pathname.startsWith("/auth") || pathname === "/onboarding") {
+        return NextResponse.redirect(new URL("/dashboard", request.url));
+      }
+      if (pathname.startsWith("/api") && !pathname.startsWith("/api/demo")) {
+        return new NextResponse(null, { status: 404 });
+      }
+    }
     return NextResponse.next({ request });
   }
 

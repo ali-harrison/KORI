@@ -32,8 +32,7 @@ interface ContractDocumentProps {
 }
 
 // "Gym Owner" is a deliberate static placeholder, not real data — there's
-// no owner-name field in the schema yet. See the contract-PDF plan's
-// judgment call 3.
+// no owner-name field in the schema yet.
 export function ContractDocument({
   gymName,
   gymAddress,

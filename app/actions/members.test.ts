@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Only the Next-runtime bits that don't exist outside an actual request
 // (cookies-backed Supabase client, redirect, cache revalidation) are
 // mocked; everything else is the real module graph. NODE_ENV is "test"
-// under vitest, so the real DEV_BYPASS (lib/queries.ts) resolves to false
+// under vitest, so the real DEMO_MODE (lib/queries.ts) resolves to false
 // here, same as it would in a real production request — no need to fake it.
 
 const authedUser = { id: "owner-1", email: "owner@example.com" };

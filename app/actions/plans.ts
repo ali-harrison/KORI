@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSession, DEV_BYPASS } from "@/lib/queries";
-import * as DEMO from "@/lib/dev-store";
+import { requireSession, DEMO_MODE } from "@/lib/queries";
+import { demoWrite } from "@/lib/demo-session";
 import type { BillingInterval, Plan } from "@/types";
 
 // Shared parse/validate for the pricing half of the create/edit plan form.
@@ -51,8 +51,9 @@ export async function createPlan(
   const pricing = parsePricingFields(formData);
   if ("error" in pricing) return pricing;
 
-  if (DEV_BYPASS) {
-    DEMO.createPlan({ name, description: description || null, price, ...pricing } as Plan);
+  if (DEMO_MODE) {
+    const result = await demoWrite("createPlan", { name, description: description || null, price, ...pricing } as Plan);
+    if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };
   }
@@ -91,8 +92,9 @@ export async function updatePlan(
   const pricing = parsePricingFields(formData);
   if ("error" in pricing) return pricing;
 
-  if (DEV_BYPASS) {
-    DEMO.updatePlan(planId, { name, description: description || null, price, ...pricing } as Plan);
+  if (DEMO_MODE) {
+    const result = await demoWrite("updatePlan", planId, { name, description: description || null, price, ...pricing } as Plan);
+    if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };
   }
@@ -123,8 +125,9 @@ export async function togglePlanActive(
 ): Promise<{ error: string } | { success: true }> {
   const { supabase } = await requireSession();
 
-  if (DEV_BYPASS) {
-    DEMO.setPlanActive(planId, active);
+  if (DEMO_MODE) {
+    const result = await demoWrite("setPlanActive", planId, active);
+    if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };
   }
@@ -144,8 +147,8 @@ export async function togglePlanActive(
 export async function deletePlan(planId: string, gymId: string): Promise<{ error: string } | { success: true }> {
   const { supabase } = await requireSession();
 
-  if (DEV_BYPASS) {
-    const result = DEMO.deletePlan(planId);
+  if (DEMO_MODE) {
+    const result = await demoWrite("deletePlan", planId);
     if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };

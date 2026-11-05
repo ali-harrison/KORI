@@ -6,31 +6,42 @@ import type {
 } from "@/types";
 import { monthlyEquivalentPrice, toLocalISODate } from "@/utils";
 import { buildActivity, currentMonthRange, filterOpenFailures, summarizeMandates, summarizeSubmissions } from "./reporting";
+import { isDemoMode } from "./demo-mode";
+import { demoState } from "./demo-session";
 import { DEMO_USER } from "./dev-data";
 import * as DEMO from "./dev-store";
 
-// Gated on NODE_ENV so this can never activate in a production build/start,
-// even if DEV_BYPASS=true leaks into a production environment by mistake.
-// When on, every read here and every write in app/actions/ goes to the
-// in-memory store in lib/dev-store.ts instead of Supabase.
-export const DEV_BYPASS = process.env.NODE_ENV === "development" && process.env.DEV_BYPASS === "true";
+// When on, every read here and every write in app/actions/ uses the visitor's
+// sample data (lib/demo-session.ts) instead of Supabase. See lib/demo-mode.ts
+// for exactly when that is.
+export const DEMO_MODE = isDemoMode();
+
+type ServerClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
+
+// There's no Supabase in demo mode, and a public demo has no keys to build a
+// client from. Anything that reaches for one is a bug, so it fails loudly.
+const NO_SUPABASE = new Proxy({}, {
+  get(_target, property) {
+    throw new Error(`Demo mode tried to use Supabase (${String(property)})`);
+  },
+}) as ServerClient;
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
-// The opening line of every Server Action. DEV_BYPASS has to be handled here:
-// demo mode has no Supabase session, so a plain getUser() check would bounce
-// every button click to the login page.
+// The opening line of every Server Action. Demo mode has to be handled here:
+// it has no Supabase session, so a plain getUser() check would bounce every
+// button click to the login page.
 export async function requireSession() {
-  const supabase = await createServerSupabaseClient();
-  if (DEV_BYPASS) return { supabase, user: DEMO_USER };
+  if (DEMO_MODE) return { supabase: NO_SUPABASE, user: DEMO_USER };
 
+  const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
   return { supabase, user };
 }
 
 export async function getUser(): Promise<{ id: string; email?: string }> {
-  if (DEV_BYPASS) return DEMO_USER;
+  if (DEMO_MODE) return DEMO_USER;
   const supabase = await createServerSupabaseClient();
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) redirect("/auth/login");
@@ -38,7 +49,7 @@ export async function getUser(): Promise<{ id: string; email?: string }> {
 }
 
 export async function getGym(): Promise<Gym> {
-  if (DEV_BYPASS) return DEMO.getGym();
+  if (DEMO_MODE) return (await demoState()).gym;
   const supabase = await createServerSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login");
@@ -56,7 +67,7 @@ export async function getGym(): Promise<Gym> {
 // ── Dashboard stats ───────────────────────────────────────────────────────────
 
 export async function getDashboardStats(gymId: string): Promise<DashboardStats> {
-  if (DEV_BYPASS) return DEMO.getDashboardStats();
+  if (DEMO_MODE) return DEMO.getDashboardStats(await demoState());
   const supabase = await createServerSupabaseClient();
   const { start: monthStart, end: monthEnd } = currentMonthRange();
 
@@ -125,7 +136,7 @@ export async function getDashboardStats(gymId: string): Promise<DashboardStats> 
 }
 
 export async function getFailedPaymentAlerts(gymId: string): Promise<FailedPaymentAlert[]> {
-  if (DEV_BYPASS) return DEMO.getFailedPaymentAlerts();
+  if (DEMO_MODE) return DEMO.getFailedPaymentAlerts(await demoState());
   const supabase = await createServerSupabaseClient();
   const { start, end } = currentMonthRange();
 
@@ -165,7 +176,7 @@ export async function getFailedPaymentAlerts(gymId: string): Promise<FailedPayme
 // Lightweight count for chrome decoration (Sidebar's gym switcher) — avoids
 // fetching full member rows just to show a number.
 export async function getMemberCount(gymId: string): Promise<number> {
-  if (DEV_BYPASS) return DEMO.getMemberCount();
+  if (DEMO_MODE) return DEMO.getMemberCount(await demoState());
   const supabase = await createServerSupabaseClient();
   const { count } = await supabase
     .from("members")
@@ -190,7 +201,7 @@ export async function getMemberCount(gymId: string): Promise<number> {
 // members (app/api/gocardless/billing-callback/route.ts) — paid-in-full
 // members never have a next charge to show here.
 export async function getUpcomingCharges(gymId: string, daysAhead = 14): Promise<UpcomingCharge[]> {
-  if (DEV_BYPASS) return DEMO.getUpcomingCharges(daysAhead);
+  if (DEMO_MODE) return DEMO.getUpcomingCharges(await demoState(), daysAhead);
   const supabase = await createServerSupabaseClient();
   const todayISO = toLocalISODate();
   const windowEndISO = toLocalISODate(new Date(Date.now() + daysAhead * 86400000));
@@ -226,7 +237,7 @@ export async function getUpcomingCharges(gymId: string, daysAhead = 14): Promise
 // GoCardless takes to confirm — windowing the fetch by created_at alone
 // would silently miss charges from near the start of the requested range.
 export async function getRecentSubmissions(gymId: string, days = 14): Promise<SubmissionDaySummary[]> {
-  if (DEV_BYPASS) return DEMO.getRecentSubmissions(days);
+  if (DEMO_MODE) return DEMO.getRecentSubmissions(await demoState(), days);
   const supabase = await createServerSupabaseClient();
   const CONFIRMATION_LAG_BUFFER_DAYS = 10;
   const since = new Date(Date.now() - (days + CONFIRMATION_LAG_BUFFER_DAYS) * 86400000).toISOString();
@@ -247,7 +258,7 @@ export async function getRecentSubmissions(gymId: string, days = 14): Promise<Su
 // Mandate-state counts for the billing page's segmented bar. See
 // getMandateBadgeState (utils/index.ts) for the derivation and its limits.
 export async function getMandateSummary(gymId: string): Promise<MandateSummary> {
-  if (DEV_BYPASS) return DEMO.getMandateSummary();
+  if (DEMO_MODE) return DEMO.getMandateSummary(await demoState());
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
@@ -260,7 +271,7 @@ export async function getMandateSummary(gymId: string): Promise<MandateSummary> 
 }
 
 export async function getRecentActivity(gymId: string, limit = 6): Promise<ActivityItem[]> {
-  if (DEV_BYPASS) return DEMO.getRecentActivity(limit);
+  if (DEMO_MODE) return DEMO.getRecentActivity(await demoState(), limit);
   const supabase = await createServerSupabaseClient();
 
   const [paymentsRes, membersRes] = await Promise.all([
@@ -285,7 +296,7 @@ export async function getRecentActivity(gymId: string, limit = 6): Promise<Activ
 // ── Members ───────────────────────────────────────────────────────────────────
 
 export async function getMembers(gymId: string): Promise<MemberWithPlan[]> {
-  if (DEV_BYPASS) return DEMO.getMembers();
+  if (DEMO_MODE) return DEMO.getMembers(await demoState());
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
@@ -299,7 +310,7 @@ export async function getMembers(gymId: string): Promise<MemberWithPlan[]> {
 }
 
 export async function getMember(memberId: string, gymId: string): Promise<MemberWithPlan | null> {
-  if (DEV_BYPASS) return DEMO.getMember(memberId);
+  if (DEMO_MODE) return DEMO.getMember(await demoState(), memberId);
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
@@ -314,7 +325,7 @@ export async function getMember(memberId: string, gymId: string): Promise<Member
 }
 
 export async function getMemberPayments(memberId: string): Promise<Payment[]> {
-  if (DEV_BYPASS) return DEMO.getMemberPayments(memberId);
+  if (DEMO_MODE) return DEMO.getMemberPayments(await demoState(), memberId);
   const supabase = await createServerSupabaseClient();
 
   const { data } = await supabase
@@ -328,7 +339,7 @@ export async function getMemberPayments(memberId: string): Promise<Payment[]> {
 }
 
 export async function getMemberContracts(memberId: string): Promise<Contract[]> {
-  if (DEV_BYPASS) return DEMO.getMemberContracts(memberId);
+  if (DEMO_MODE) return DEMO.getMemberContracts(await demoState(), memberId);
   const supabase = await createServerSupabaseClient();
 
   const { data } = await supabase
@@ -343,7 +354,7 @@ export async function getMemberContracts(memberId: string): Promise<Contract[]> 
 // ── Plans ─────────────────────────────────────────────────────────────────────
 
 export async function getPlans(gymId: string): Promise<Plan[]> {
-  if (DEV_BYPASS) return DEMO.getPlans();
+  if (DEMO_MODE) return DEMO.getPlans(await demoState());
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase
@@ -358,7 +369,7 @@ export async function getPlans(gymId: string): Promise<Plan[]> {
 
 // Plans with member count using subquery
 export async function getPlansWithMemberCount(gymId: string) {
-  if (DEV_BYPASS) return DEMO.getPlansWithMemberCount();
+  if (DEMO_MODE) return DEMO.getPlansWithMemberCount(await demoState());
   const supabase = await createServerSupabaseClient();
 
   const { data: plans, error } = await supabase
@@ -387,7 +398,7 @@ export async function getPlansWithMemberCount(gymId: string) {
 // ── Contracts ─────────────────────────────────────────────────────────────────
 
 export async function getContracts(gymId: string): Promise<ContractWithMember[]> {
-  if (DEV_BYPASS) return DEMO.getContracts();
+  if (DEMO_MODE) return DEMO.getContracts(await demoState());
   const supabase = await createServerSupabaseClient();
 
   const { data, error } = await supabase

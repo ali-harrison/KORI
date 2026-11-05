@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { DEV_BYPASS } from "@/lib/queries";
-import { resetDemoState } from "@/lib/dev-store";
+import { DEMO_MODE } from "@/lib/queries";
+import { resetDemoSession } from "@/lib/demo-session";
 
 export async function resetDemo() {
-  if (!DEV_BYPASS) return;
-  resetDemoState();
+  if (!DEMO_MODE) return;
+  await resetDemoSession();
   revalidatePath("/dashboard", "layout");
   // The page you're on might be a member the reset just removed.
   redirect("/dashboard");

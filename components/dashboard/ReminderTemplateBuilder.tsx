@@ -34,7 +34,7 @@ export function ReminderTemplateBuilder({ gym }: Props) {
 
     startTransition(async () => {
       const result = await updateReminderTemplate(gym.id, formData);
-      if (result?.error) {
+      if ("error" in result) {
         setError(result.error);
       } else {
         setSaved(true);

@@ -1,6 +1,6 @@
 "use server";
 
-import { getGym, getFailedPaymentAlerts, requireSession, DEV_BYPASS } from "@/lib/queries";
+import { getGym, getFailedPaymentAlerts, requireSession, DEMO_MODE } from "@/lib/queries";
 import { isEmailConfigured, sendOverdueReminderEmail } from "@/lib/resend";
 import { renderTemplate } from "@/lib/templates";
 import { formatCurrency, formatDate } from "@/utils";
@@ -31,10 +31,7 @@ export async function sendOverdueReminder(
   const subject = renderTemplate(gym.overdue_email_subject, tokens);
   const bodyText = renderTemplate(gym.overdue_email_body, tokens);
 
-  if (DEV_BYPASS) {
-    console.log(`[demo] Would send overdue reminder to ${alert.memberEmail}`);
-    return { success: true };
-  }
+  if (DEMO_MODE) return { success: true };
 
   if (!isEmailConfigured()) {
     return { error: "Email sending isn't set up yet, so this reminder wasn't sent." };

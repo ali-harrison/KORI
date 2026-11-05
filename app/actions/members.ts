@@ -2,8 +2,8 @@
 
 import type { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
-import { getGym, getMember, requireSession, DEV_BYPASS } from "@/lib/queries";
-import * as DEMO from "@/lib/dev-store";
+import { getGym, getMember, requireSession, DEMO_MODE } from "@/lib/queries";
+import { demoWrite } from "@/lib/demo-session";
 import { getGoCardlessGymClient } from "@/lib/gocardless";
 import { cancelMemberBilling } from "@/lib/member-cancellation";
 import type { MemberStatus } from "@/types";
@@ -41,8 +41,9 @@ export async function updateMemberStatus(
 ): Promise<{ error: string } | { success: true }> {
   const { supabase } = await requireSession();
 
-  if (DEV_BYPASS) {
-    DEMO.setMemberStatus(memberId, status);
+  if (DEMO_MODE) {
+    const result = await demoWrite("setMemberStatus", memberId, status);
+    if (result) return result;
   } else {
     const { error } = await supabase
       .from("members")
@@ -70,8 +71,9 @@ export async function cancelMember(
 ): Promise<{ error: string } | { success: true }> {
   const { supabase } = await requireSession();
 
-  if (DEV_BYPASS) {
-    DEMO.cancelMember(memberId);
+  if (DEMO_MODE) {
+    const result = await demoWrite("cancelMember", memberId);
+    if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };
   }
@@ -108,8 +110,8 @@ export async function createMember(
     return { error: "Enter a valid email address" };
   }
 
-  if (DEV_BYPASS) {
-    const result = DEMO.createMember({ first_name, last_name, email, phone: phone || null, plan_id });
+  if (DEMO_MODE) {
+    const result = await demoWrite("createMember", { first_name, last_name, email, phone: phone || null, plan_id });
     if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };
@@ -157,8 +159,9 @@ export async function assignMemberPlan(
 ): Promise<{ error: string } | { success: true }> {
   const { supabase } = await requireSession();
 
-  if (DEV_BYPASS) {
-    DEMO.assignMemberPlan(memberId, planId);
+  if (DEMO_MODE) {
+    const result = await demoWrite("assignMemberPlan", memberId, planId);
+    if (result) return result;
   } else {
     if (!(await isValidPlanForGym(supabase, planId, gymId))) {
       return { error: "Invalid plan selected" };

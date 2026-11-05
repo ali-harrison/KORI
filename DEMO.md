@@ -1,8 +1,8 @@
 # Demo walkthrough
 
-About five minutes, in demo mode (see the [README](README.md)). Sample data is dated relative to today, so it's always current. If a run goes sideways, press **Reset demo** in the top banner.
+About five minutes, in demo mode (see the [README](README.md)). Sample data is dated relative to today, so it's always current. Your changes stay in your own browser, and if a run goes sideways, press **Reset demo** in the top banner.
 
-Run through it once before presenting. `npm run dev` compiles each page the first time it's opened, so the first visit to a page is slower than the rest.
+Running it locally, go through it once before presenting: `npm run dev` compiles each page the first time it's opened, so the first visit to a page is slower than the rest.
 
 ## Starting point
 
@@ -22,7 +22,7 @@ Failed payments are at the top, next to what's due this week and recent activity
 
 1. Under **Needs attention**, click **Send reminder** next to Aroha. It confirms with **Sent**. The wording comes from the template in Settings.
 2. Click **View** to open Aroha's profile: the failed charge sits on top of their payment history.
-3. Say they've paid cash at the desk. Click **Record payment**, enter `15`, and save. It appears straight away.
+3. Say they've paid cash at the desk. Click **Record payment**, enter `18`, and save. It appears straight away.
 4. Click **Reactivate** to set them back to active.
 5. Back on **Overview**, Aroha has left Needs attention, Failed payments has dropped to 1, and revenue is up $18.
 
@@ -59,4 +59,4 @@ Everything works at phone width, with the menu behind the button at the top left
 
 ## Demoing against a real database
 
-`npm run seed:demo` loads a separate sample set into Supabase for a click-through with real sign-in. **It deletes the gym's existing plans, members, contracts and payments first**, so only run it on a database with nothing worth keeping. Sign in at `/auth/login` with the owner email set in `scripts/seed-demo.mjs`.
+`npm run seed:demo` loads a separate sample set into Supabase for a click-through with real sign-in. **It deletes the gym's existing plans, members, contracts and payments first**, so only run it on a database with nothing worth keeping. Set `SEED_OWNER_EMAIL` in `.env.local` to the email that owns the gym, and sign in with it at `/auth/login`.

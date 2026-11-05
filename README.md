@@ -1,12 +1,22 @@
 # kori/os
 
-Gym management for NZ gyms: members, plans, GoCardless direct debit, contracts and overdue reminders. Built for one pilot gym, Southerly Strength in Southport.
+Gym management for NZ gyms: members, plans, GoCardless direct debit, contracts and overdue reminders.
+
+## What it does
+
+- **Overview** of what needs doing today: failed payments, charges due this week, recent activity
+- **Members** with plans, payment history, direct debit status and contracts
+- **Plans** that bill weekly, monthly, annually, or paid in full up front
+- **Direct debit** through GoCardless: mandates, subscriptions, and a webhook that keeps payments in sync
+- **Contracts** generated as PDFs from a template the gym edits, with a live preview
+- **Overdue reminders** the gym can word themselves and send in one click
+- **Te reo Māori** labels throughout, which can be turned off, and a layout that works on a phone
 
 **Stack:** Next.js 16 (App Router), TypeScript, Tailwind 4, Supabase (Postgres, Auth, Storage), GoCardless, Resend, `@react-pdf/renderer`. Deployed on Vercel.
 
 ## Run the demo
 
-No accounts or credentials needed. Demo mode runs on sample data held in memory.
+No accounts or credentials needed.
 
 ```bash
 npm install
@@ -16,13 +26,22 @@ npm run dev
 
 Open http://localhost:3000. [DEMO.md](DEMO.md) has a five-minute walkthrough.
 
-Everything you click works and persists until the server restarts or you press **Reset demo**. Nothing leaves your machine: no emails, no payments, no database.
+Everything you click works and persists until you press **Reset demo**. Nothing leaves your browser: no emails, no payments, no database.
+
+### How the demo works
+
+Each visitor's changes are saved in a cookie as a list of what they did, and replayed over the sample data on every request. The server stores nothing, so one visitor never sees another's changes, and it works on serverless hosting where requests can land on different machines.
+
+Demo mode turns off sign-in, so it's only allowed where nothing real can be reached:
+
+- `DEV_BYPASS=true` only works under `next dev`. The build refuses it for production.
+- `PUBLIC_DEMO=true` is for the public deployment. It's refused at build time if any Supabase, GoCardless or Resend key is set, and turns itself off at runtime if one appears later.
+
+See `lib/demo-mode.ts`.
 
 ## Run against real services
 
-Set `DEV_BYPASS=false` in `.env.local` and fill in the rest of the values, then follow the checklist below.
-
-`DEV_BYPASS` turns off all authentication, so it only works under `next dev`, and `next.config.ts` refuses to build or start production with it on. To run a production build locally while your `.env.local` has it on:
+Set `DEV_BYPASS=false` in `.env.local` and fill in the rest of the values, then follow the checklist below. To run a production build locally while your `.env.local` has it on:
 
 ```bash
 DEV_BYPASS=false npm run build
@@ -65,8 +84,7 @@ Every variable also needs to be set in Vercel. Pushing to `main` deploys.
 | `app/api/` | GoCardless OAuth, billing callback and webhook |
 | `lib/queries.ts` | All reads |
 | `lib/reporting.ts` | Pure aggregation shared by real and demo data |
-| `lib/dev-data.ts`, `lib/dev-store.ts` | Demo mode's sample data and in-memory store |
+| `lib/demo-mode.ts` | When demo mode is allowed to be on |
+| `lib/dev-data.ts`, `lib/dev-store.ts`, `lib/demo-session.ts` | Demo sample data, its reads and writes, and the per-visitor cookie |
 | `lib/gocardless-webhook.ts`, `lib/member-cancellation.ts` | Billing logic, kept framework-free so it's unit testable |
 | `supabase/migrations/` | Schema |
-
-[AUDIT.md](AUDIT.md) is the running record of what's been verified, what's known to be missing, and why decisions were made.

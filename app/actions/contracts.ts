@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getGym, getMember, getMemberContracts, requireSession, DEV_BYPASS } from "@/lib/queries";
-import * as DEMO from "@/lib/dev-store";
+import { getGym, getMember, getMemberContracts, requireSession, DEMO_MODE } from "@/lib/queries";
+import { demoWrite } from "@/lib/demo-session";
 import { isEmailConfigured, sendContractEmail } from "@/lib/resend";
 import { renderMemberContractPdf } from "@/lib/contract-pdf";
 
@@ -26,7 +26,7 @@ export async function sendContract(
   ]);
   if (!member) return { error: "Member not found" };
 
-  if (!DEV_BYPASS && !isEmailConfigured()) {
+  if (!DEMO_MODE && !isEmailConfigured()) {
     return { error: "Email sending isn't set up yet, so this contract wasn't sent." };
   }
 
@@ -48,9 +48,9 @@ export async function sendContract(
 
   // No email leaves demo mode. PDF generation above still ran for real, so a
   // broken template fails here exactly as it would in production.
-  if (DEV_BYPASS) {
-    console.log(`[demo] Would email contract PDF to ${member.email}`);
-    DEMO.sendContract(memberId);
+  if (DEMO_MODE) {
+    const result = await demoWrite("sendContract", memberId);
+    if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };
   }
@@ -116,7 +116,7 @@ export async function getContractDownloadUrl(
 ): Promise<{ url: string } | { error: string }> {
   const { supabase } = await requireSession();
 
-  if (DEV_BYPASS) {
+  if (DEMO_MODE) {
     return { url: `/api/demo/contract/${contractId}` };
   }
 
@@ -152,8 +152,9 @@ export async function markContractSigned(
 ): Promise<{ error: string } | { success: true }> {
   const { supabase } = await requireSession();
 
-  if (DEV_BYPASS) {
-    DEMO.markContractSigned(contractId);
+  if (DEMO_MODE) {
+    const result = await demoWrite("markContractSigned", contractId);
+    if (result) return result;
   } else {
     const { error } = await supabase
       .from("contracts")

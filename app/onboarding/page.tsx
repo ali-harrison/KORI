@@ -49,7 +49,7 @@ export default function OnboardingPage() {
             <Input label="Address" name="address" placeholder="12 Harbour Road, Southport" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Phone" name="phone" type="tel" placeholder="+64 21 555 0100" />
-              <Input label="Gym email" name="email" type="email" placeholder="info@gym.co.nz" />
+              <Input label="Gym email" name="email" type="email" placeholder="hello@example.com" />
             </div>
             {error && <p className="text-xs text-[#cf7263]">{error}</p>}
             <div className="pt-2">

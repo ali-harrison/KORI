@@ -1,7 +1,7 @@
 "use server";
 
-import { getGym, getMember, requireSession, DEV_BYPASS } from "@/lib/queries";
-import * as DEMO from "@/lib/dev-store";
+import { getGym, getMember, requireSession, DEMO_MODE } from "@/lib/queries";
+import { demoWrite } from "@/lib/demo-session";
 import { getGoCardlessGymClient, createBillingRequest, createBillingRequestFlow } from "@/lib/gocardless";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -23,8 +23,9 @@ export async function startBillingForMember(memberId: string): Promise<{ error: 
 
   // No hosted bank page to send anyone to in the demo — this lands the member
   // where billing-callback would have left them.
-  if (DEV_BYPASS) {
-    DEMO.startDirectDebit(memberId);
+  if (DEMO_MODE) {
+    const result = await demoWrite("startDirectDebit", memberId);
+    if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };
   }

@@ -12,9 +12,10 @@ import type { ClientGym } from "@/types";
 
 interface Props {
   gym: ClientGym;
+  isDemo: boolean;
 }
 
-export function SettingsForm({ gym }: Props) {
+export function SettingsForm({ gym, isDemo }: Props) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -45,7 +46,7 @@ export function SettingsForm({ gym }: Props) {
 
     startTransition(async () => {
       const result = await updateGym(gym.id, formData);
-      if (result?.error) {
+      if ("error" in result) {
         setError(result.error);
       } else {
         setSaved(true);
@@ -81,7 +82,8 @@ export function SettingsForm({ gym }: Props) {
             name="logo_url"
             defaultValue={gym.logo_url ?? ""}
             placeholder="https://…"
-            hint="Paste a link to your logo — shown on contract and reminder emails."
+            disabled={isDemo}
+            hint={isDemo ? "Turned off in the demo." : "Paste a link to your logo — shown on contract and reminder emails."}
           />
           {error && <p className="text-xs text-[#cf9a90]">{error}</p>}
           <div className="flex justify-end pt-1">

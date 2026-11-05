@@ -64,7 +64,7 @@ describe("getMandateBadgeState", () => {
   });
 });
 
-// Vercel runs in UTC, 13 hours behind NZ in summer. 8am Thursday in Southport is
+// Vercel runs in UTC, 13 hours behind NZ in summer. 8am Thursday in NZ is
 // still 7pm Wednesday on the server.
 describe("dates follow the gym's calendar, not the server's", () => {
   afterEach(() => vi.useRealTimers());

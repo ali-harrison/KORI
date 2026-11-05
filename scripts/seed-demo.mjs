@@ -28,8 +28,12 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   );
 }
 
-// The pilot's owner account. Update this if that ever changes.
-const OWNER_EMAIL = "owner@example.com";
+// The account that owns the gym row. Only used to sanity-check it's the right gym.
+const OWNER_EMAIL = process.env.SEED_OWNER_EMAIL;
+
+if (!OWNER_EMAIL) {
+  throw new Error("Set SEED_OWNER_EMAIL in .env.local to the email that owns the gym.");
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
@@ -102,7 +106,7 @@ async function main() {
   await supabase.from("plans").delete().eq("gym_id", gymId);
   console.log("Cleared existing plans/members/contracts/payments for this gym.");
 
-  // ── 4. Seed plans — the three real Southerly Strength pricing shapes ─────────────
+  // ── 4. Seed plans — one of each pricing shape ─────────────
   const { data: plans, error: plansError } = await supabase
     .from("plans")
     .insert([
@@ -201,7 +205,7 @@ async function main() {
     gym_id: gymId,
     member_id: byFirstName("Mitchell").id,
     plan_id: weekly.id,
-    amount: 15,
+    amount: 18,
     currency: "NZD",
     provider: "gocardless",
     provider_payment_id: "PM0011223344",

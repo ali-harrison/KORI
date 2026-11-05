@@ -40,6 +40,9 @@ yarn-error.log*
 # supabase CLI local linking cache
 /supabase/.temp
 
+# private project notes
+/AUDIT.md
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

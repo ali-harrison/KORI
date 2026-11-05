@@ -59,7 +59,7 @@ async function handlePaymentEvent(
 
   // A payments-resource event's links only ever carry { payment }, not the
   // mandate — verified against GoCardless's published example webhook
-  // payloads, not a live sandbox event (flagged in the report). Fetching
+  // payloads, not a live sandbox event. Fetching
   // the payment itself is the only way to find which mandate, and
   // therefore which member, it belongs to.
   let payment;

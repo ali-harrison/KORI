@@ -84,7 +84,7 @@ const navItems: NavItem[] = [
 ];
 
 interface SidebarProps {
-  gymName?: string;
+  gymName: string;
   memberCount?: number;
   userEmail?: string;
   isDemo?: boolean;
@@ -92,7 +92,7 @@ interface SidebarProps {
   onNavigate?: () => void;
 }
 
-export function Sidebar({ gymName = "Southerly Strength", memberCount, userEmail, isDemo, className, onNavigate }: SidebarProps) {
+export function Sidebar({ gymName, memberCount, userEmail, isDemo, className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { bilingual, motif } = useThemeSettings();
 
@@ -114,7 +114,7 @@ export function Sidebar({ gymName = "Southerly Strength", memberCount, userEmail
       {/* Current gym */}
       <div className="mt-5 flex items-center gap-2.5 px-2.5 py-2 border border-[#1f2420] rounded-[9px]">
         <div className="w-[26px] h-[26px] rounded-[7px] bg-[#151a16] border border-[#232823] text-[var(--accent)] text-xs font-medium flex items-center justify-center flex-shrink-0">
-          {gymName[0]?.toUpperCase() ?? "P"}
+          {gymName[0]?.toUpperCase()}
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-xs font-medium text-[#e7eae8] truncate">{gymName}</div>

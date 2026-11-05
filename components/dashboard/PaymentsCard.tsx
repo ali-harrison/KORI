@@ -118,7 +118,7 @@ export function PaymentsCard({ memberId, gymId, payments }: Props) {
             label="Amount (NZD)"
             name="amount"
             type="number"
-            placeholder="15"
+            placeholder="18"
             min="0.01"
             step="0.01"
             required

@@ -231,7 +231,7 @@ export function PlansManager({ plans, gymId }: Props) {
                 label="Price (NZD)"
                 name="price"
                 type="number"
-                placeholder="15"
+                placeholder="18"
                 min="0.01"
                 step="0.01"
                 defaultValue={planBeingEdited?.price}

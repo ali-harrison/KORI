@@ -8,7 +8,7 @@ interface EmptyStateProps {
   // reo is optional and only ever set where the design reference actually
   // gives us a translation (currently just the payment-history empty
   // state, "Kāore anō he utu"). Left undefined everywhere else rather than
-  // inventing one — see the "no fabricated te reo" note in the rebuild plan.
+  // inventing one.
   title: { reo?: string; en: string };
   description?: string;
   className?: string;

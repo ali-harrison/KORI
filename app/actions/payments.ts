@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireSession, DEV_BYPASS } from "@/lib/queries";
-import * as DEMO from "@/lib/dev-store";
+import { requireSession, DEMO_MODE } from "@/lib/queries";
+import { demoWrite } from "@/lib/demo-session";
 
 export async function recordPayment(
   memberId: string,
@@ -18,8 +18,8 @@ export async function recordPayment(
     return { error: "Enter the date paid" };
   }
 
-  if (DEV_BYPASS) {
-    const result = DEMO.recordPayment(memberId, { amount, paidAt, note: note || null });
+  if (DEMO_MODE) {
+    const result = await demoWrite("recordPayment", memberId, { amount, paidAt, note: note || null });
     if (result) return result;
     revalidatePath("/dashboard", "layout");
     return { success: true };

@@ -4,17 +4,16 @@ import { createAdminClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { slugify } from "@/utils";
-import { requireSession, DEV_BYPASS } from "@/lib/queries";
-import * as DEMO from "@/lib/dev-store";
+import { requireSession, DEMO_MODE } from "@/lib/queries";
+import { demoWrite } from "@/lib/demo-session";
 
-// Single-tenant pilot decision: KORI runs one gym (Southerly Strength) per
-// deployment for now. Self-serve onboarding is kept in the code (it's the
+// Single-tenant pilot decision: KORI runs one gym per deployment for now. Self-serve onboarding is kept in the code (it's the
 // real multi-tenant path and the fastest way back to it later) but hard-
 // stopped here so a second, unrelated gym can never get created by
 // accident. Reversible — delete this check to reopen onboarding.
 export async function createGym(formData: FormData) {
   // The demo gym already exists — nothing to create.
-  if (DEV_BYPASS) redirect("/dashboard");
+  if (DEMO_MODE) redirect("/dashboard");
 
   const { supabase, user } = await requireSession();
 
@@ -70,7 +69,10 @@ export async function createGym(formData: FormData) {
   redirect("/dashboard");
 }
 
-export async function updateGym(gymId: string, formData: FormData) {
+export async function updateGym(
+  gymId: string,
+  formData: FormData
+): Promise<{ error: string } | { success: true }> {
   const { supabase, user } = await requireSession();
 
   const name = (formData.get("name") as string)?.trim();
@@ -84,8 +86,9 @@ export async function updateGym(gymId: string, formData: FormData) {
     logo_url: (formData.get("logo_url") as string)?.trim() || null,
   };
 
-  if (DEV_BYPASS) {
-    DEMO.updateGym(fields);
+  if (DEMO_MODE) {
+    const result = await demoWrite("updateGym", fields);
+    if (result) return result;
   } else {
     const { error } = await supabase.from("gyms").update(fields).eq("id", gymId).eq("owner_id", user.id);
     if (error) return { error: error.message };
@@ -98,14 +101,18 @@ export async function updateGym(gymId: string, formData: FormData) {
 
 // One reusable template per gym — see lib/templates.ts for the render
 // function and lib/resend.ts for where this gets sent.
-export async function updateContractTemplate(gymId: string, formData: FormData) {
+export async function updateContractTemplate(
+  gymId: string,
+  formData: FormData
+): Promise<{ error: string } | { success: true }> {
   const { supabase, user } = await requireSession();
 
   const contractTemplate = (formData.get("contract_template") as string)?.trim();
   if (!contractTemplate) return { error: "Contract template can't be empty" };
 
-  if (DEV_BYPASS) {
-    DEMO.updateGym({ contract_template: contractTemplate });
+  if (DEMO_MODE) {
+    const result = await demoWrite("updateGym", { contract_template: contractTemplate });
+    if (result) return result;
     revalidatePath("/dashboard/settings");
     return { success: true };
   }
@@ -122,7 +129,10 @@ export async function updateContractTemplate(gymId: string, formData: FormData) 
   return { success: true };
 }
 
-export async function updateReminderTemplate(gymId: string, formData: FormData) {
+export async function updateReminderTemplate(
+  gymId: string,
+  formData: FormData
+): Promise<{ error: string } | { success: true }> {
   const { supabase, user } = await requireSession();
 
   const overdueEmailSubject = (formData.get("overdue_email_subject") as string)?.trim();
@@ -131,8 +141,9 @@ export async function updateReminderTemplate(gymId: string, formData: FormData) 
     return { error: "Subject and body can't be empty" };
   }
 
-  if (DEV_BYPASS) {
-    DEMO.updateGym({ overdue_email_subject: overdueEmailSubject, overdue_email_body: overdueEmailBody });
+  if (DEMO_MODE) {
+    const result = await demoWrite("updateGym", { overdue_email_subject: overdueEmailSubject, overdue_email_body: overdueEmailBody });
+    if (result) return result;
     revalidatePath("/dashboard/settings");
     return { success: true };
   }
