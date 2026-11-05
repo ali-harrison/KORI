@@ -1,10 +1,15 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { getGym, getContracts } from "@/lib/queries";
 import { DataTable, DataTableRow, EmptyState, Badge } from "@/components/ui";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { ContractActions } from "@/components/dashboard/ContractActions";
 import { formatDate } from "@/utils";
 
-const GRID = "1.8fr 1.4fr 1fr 1fr 1fr 1.2fr";
+export const metadata: Metadata = { title: "Contracts" };
+
+// The last column fits the widest row: Resend, Mark as signed and Download.
+const GRID = "minmax(0,1.5fr) minmax(0,1.4fr) 64px 64px 96px 280px";
 
 export default async function ContractsPage() {
   const gym = await getGym();
@@ -19,12 +24,12 @@ export default async function ContractsPage() {
         <span className="text-[17px] font-medium">Contracts</span>
         <span className="text-[13px] text-[#646c66]">{contracts.length} total</span>
         <div className="flex-1" />
-        <a href="/dashboard/settings#contract-template" className="text-xs text-[var(--accent)] hover:opacity-80 transition-opacity duration-150">
+        <Link href="/dashboard/settings#contract-template" className="text-xs text-[var(--accent)] hover:opacity-80 transition-opacity duration-150">
           Edit template
-        </a>
+        </Link>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5">
         <StatCard label="Total" value={contracts.length} />
         <StatCard label="Signed" value={signed} variant="success" />
         <StatCard label="Awaiting signature" value={pending} variant="warning" />
@@ -34,11 +39,11 @@ export default async function ContractsPage() {
         <div className="bg-[#111412] border border-[#1f2420] rounded-[10px]">
           <EmptyState
             title={{ en: "No contracts yet" }}
-            description="Contracts are created when members sign up."
+            description="Send one from a member's profile and it'll show up here."
           />
         </div>
       ) : (
-        <DataTable gridTemplateColumns={GRID} headers={["Member", "Plan", "Sent", "Signed", "Status", ""]}>
+        <DataTable gridTemplateColumns={GRID} minWidth={860} headers={["Member", "Plan", "Sent", "Signed", "Status", ""]}>
           {contracts.map((contract) => {
             const member = contract.member as {
               id: string;
@@ -48,12 +53,12 @@ export default async function ContractsPage() {
             };
             return (
               <DataTableRow key={contract.id} gridTemplateColumns={GRID}>
-                <a
+                <Link
                   href={`/dashboard/members/${member.id}`}
                   className="text-[13px] font-medium text-[#e7eae8] hover:text-[var(--accent)] transition-colors duration-150 truncate"
                 >
                   {member.first_name} {member.last_name}
-                </a>
+                </Link>
                 <div className="text-[13px] text-[#8f978f] truncate">{member.plan?.name ?? "—"}</div>
                 <div className="text-[13px] text-[#8f978f] tabular-nums">
                   {formatDate(contract.last_sent_at ?? contract.created_at, { day: "numeric", month: "short" })}

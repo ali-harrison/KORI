@@ -10,7 +10,7 @@ interface FilterChipsProps<T extends string> {
 // Single-select pill row — used for the Members list status filter.
 export function FilterChips<T extends string>({ options, value, onChange, className }: FilterChipsProps<T>) {
   return (
-    <div className={cn("flex gap-1.5", className)}>
+    <div className={cn("flex flex-wrap gap-1.5", className)}>
       {options.map((option) => {
         const active = value === option;
         return (

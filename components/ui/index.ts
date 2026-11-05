@@ -12,3 +12,4 @@ export { FilterChips } from "./FilterChips";
 export { DataTable, DataTableRow } from "./DataTable";
 export { MandateBar } from "./MandateBar";
 export { PuhoroMotif } from "./PuhoroMotif";
+export { Wordmark } from "./Wordmark";

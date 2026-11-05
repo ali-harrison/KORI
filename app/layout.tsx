@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, Spline_Sans_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,8 +17,15 @@ const splineSansMono = Spline_Sans_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "kori/os — Gym Management",
+  title: {
+    default: "kori/os — Gym Management",
+    template: "%s · kori/os",
+  },
   description: "Gym management platform for NZ gyms",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0b0d0c",
 };
 
 export default function RootLayout({

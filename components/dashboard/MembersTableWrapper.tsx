@@ -30,7 +30,9 @@ export function MembersTableWrapper({ members, plans, gymId }: Props) {
 
       <MembersTable members={members} />
 
+      {/* Keyed so reopening starts clean, with no error left from last time. */}
       <AddMemberModal
+        key={String(showModal)}
         open={showModal}
         onClose={() => setShowModal(false)}
         gymId={gymId}

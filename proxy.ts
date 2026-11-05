@@ -38,21 +38,12 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isAuthRoute = pathname.startsWith("/auth");
-  const isPortalRoute = pathname.startsWith("/portal");
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isOnboarding = pathname === "/onboarding";
   const isApiRoute = pathname.startsWith("/api");
 
   // Skip middleware for API routes
   if (isApiRoute) return supabaseResponse;
-
-  // Single-tenant pilot: there's no member-facing auth or session yet, so
-  // the portal is just an unreachable hardcoded mock. Redirect rather than
-  // let anyone load it. Reversible — this is the only line standing between
-  // /portal and being live again once member auth ships.
-  if (isPortalRoute) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
 
   // Unauthenticated → login (except auth routes)
   if (!user && (isDashboardRoute || isOnboarding)) {

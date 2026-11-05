@@ -9,17 +9,6 @@ const GC_ENVIRONMENT = IS_LIVE ? Environments.Live : Environments.Sandbox;
 const GC_OAUTH_BASE = IS_LIVE ? "https://connect.gocardless.com" : "https://connect-sandbox.gocardless.com";
 const GC_API_BASE = IS_LIVE ? "https://api.gocardless.com" : "https://api-sandbox.gocardless.com";
 
-// ── Client (lazy, server-only) ────────────────────────────────────────────────
-
-let _client: GoCardlessClient | null = null;
-
-export function getGoCardlessClient(): GoCardlessClient {
-  if (!_client) {
-    _client = GoCardless(process.env.GOCARDLESS_ACCESS_TOKEN!, GC_ENVIRONMENT);
-  }
-  return _client;
-}
-
 // ── Per-gym client (uses gym's own access token) ──────────────────────────────
 
 export function getGoCardlessGymClient(accessToken: string): GoCardlessClient {

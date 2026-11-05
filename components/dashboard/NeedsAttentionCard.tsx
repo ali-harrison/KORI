@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Card, Badge, EmptyState } from "@/components/ui";
 import { sendOverdueReminder } from "@/app/actions/reminders";
@@ -55,7 +56,7 @@ function AlertRow({ alert, gymId }: { alert: FailedPaymentAlert; gymId: string }
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-medium">Payment failed — {alert.memberName}</div>
         <div className="text-xs text-[#8f978f] mt-[2px] text-pretty">
-          {formatCurrency(alert.amount)} weekly charge failed on {formatDate(alert.failedAt, { day: "numeric", month: "short" })}.
+          {formatCurrency(alert.amount)} charge failed on {formatDate(alert.failedAt, { day: "numeric", month: "short" })}.
         </div>
         {notice && (
           <div className={`text-xs mt-1 ${notice.type === "success" ? "text-[#5fc9a4]" : "text-[#cf9a90]"}`}>
@@ -73,12 +74,12 @@ function AlertRow({ alert, gymId }: { alert: FailedPaymentAlert; gymId: string }
             {isPending ? "Sending…" : "Send reminder"}
           </button>
         )}
-        <a
+        <Link
           href={alert.memberId ? `/dashboard/members/${alert.memberId}` : "/dashboard/members"}
           className="text-xs text-[var(--accent)]"
         >
           View
-        </a>
+        </Link>
       </div>
     </div>
   );

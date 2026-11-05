@@ -108,9 +108,17 @@ describe("handleGoCardlessEvent — payments.confirmed idempotency", () => {
 
 // Minimal fake of the "members" table shape handleMandateCancelled uses —
 // captures what gets passed to .update() so the test can assert on the
-// exact payload rather than just "it didn't throw".
-function createFakeSupabaseForMandateCancel(matchingMemberIds: string[]) {
+// exact payload rather than just "it didn't throw". The handler tries an
+// update scoped to .not("cancellation_requested_at", "is", null) first, then
+// an unscoped one, so the two id lists model which update matches anyone.
+function createFakeSupabaseForMandateCancel(opts: { requestedByGym?: string[]; unprompted?: string[] }) {
+  const { requestedByGym = [], unprompted = [] } = opts;
   const updates: Array<Record<string, unknown>> = [];
+
+  const respond = (values: Record<string, unknown>, ids: string[]) => async () => {
+    updates.push(values);
+    return { data: ids.map((id) => ({ id })), error: null };
+  };
 
   const client = {
     from(table: string) {
@@ -118,13 +126,8 @@ function createFakeSupabaseForMandateCancel(matchingMemberIds: string[]) {
       return {
         update: (values: Record<string, unknown>) => ({
           eq: (_col: string, _value: string) => ({
-            select: async () => {
-              updates.push(values);
-              return {
-                data: matchingMemberIds.map((id) => ({ id })),
-                error: null,
-              };
-            },
+            not: () => ({ select: respond(values, requestedByGym) }),
+            select: respond(values, unprompted),
           }),
         }),
       };
@@ -135,8 +138,30 @@ function createFakeSupabaseForMandateCancel(matchingMemberIds: string[]) {
 }
 
 describe("handleGoCardlessEvent — mandates.cancelled", () => {
-  it("clears gc_mandate_id, gc_subscription_id, and cancellation_requested_at together", async () => {
-    const { client, updates } = createFakeSupabaseForMandateCancel(["mem-1"]);
+  it("finishes a cancellation the gym asked for: the member ends up cancelled, not paused", async () => {
+    const { client, updates } = createFakeSupabaseForMandateCancel({ requestedByGym: ["mem-1"] });
+
+    const event = {
+      id: "EV998",
+      resource_type: "mandates",
+      action: "cancelled",
+      links: { mandate: "MD123" },
+    } as Event;
+
+    await handleGoCardlessEvent(event, client, null);
+
+    expect(updates).toEqual([
+      {
+        gc_mandate_id: null,
+        gc_subscription_id: null,
+        status: "cancelled",
+        cancellation_requested_at: null,
+      },
+    ]);
+  });
+
+  it("pauses a member whose mandate died on its own, clearing all three fields together", async () => {
+    const { client, updates } = createFakeSupabaseForMandateCancel({ unprompted: ["mem-1"] });
 
     const event = {
       id: "EV999",
@@ -151,18 +176,16 @@ describe("handleGoCardlessEvent — mandates.cancelled", () => {
     // gc_subscription_id/status — otherwise a member who later gets a brand
     // new mandate would still read as "cancelling" forever, since
     // getMandateBadgeState checks this field ahead of gc_mandate_id.
-    expect(updates).toEqual([
-      {
-        gc_mandate_id: null,
-        gc_subscription_id: null,
-        status: "paused",
-        cancellation_requested_at: null,
-      },
-    ]);
+    expect(updates.at(-1)).toEqual({
+      gc_mandate_id: null,
+      gc_subscription_id: null,
+      status: "paused",
+      cancellation_requested_at: null,
+    });
   });
 
   it("no-ops cleanly when no member currently holds the cancelled mandate", async () => {
-    const { client, updates } = createFakeSupabaseForMandateCancel([]);
+    const { client, updates } = createFakeSupabaseForMandateCancel({});
 
     const event = {
       id: "EV1000",
@@ -172,6 +195,6 @@ describe("handleGoCardlessEvent — mandates.cancelled", () => {
     } as Event;
 
     await expect(handleGoCardlessEvent(event, client, null)).resolves.toBeUndefined();
-    expect(updates).toHaveLength(1);
+    expect(updates).toHaveLength(2); // both scoped updates tried, neither matched anyone
   });
 });

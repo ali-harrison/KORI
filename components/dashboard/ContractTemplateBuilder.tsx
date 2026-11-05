@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, Button } from "@/components/ui";
 import { Textarea } from "@/components/ui/Input";
 import { updateContractTemplate } from "@/app/actions/gym";
 import { renderTemplate } from "@/lib/templates";
-import type { Gym } from "@/types";
+import type { ClientGym } from "@/types";
 
 // Sample data for the live preview only — real token substitution always
 // happens server-side at actual send time (app/actions/contracts.ts).
@@ -17,7 +17,7 @@ const SAMPLE_TOKENS = {
 };
 
 interface Props {
-  gym: Gym;
+  gym: ClientGym;
 }
 
 export function ContractTemplateBuilder({ gym }: Props) {
@@ -60,7 +60,7 @@ export function ContractTemplateBuilder({ gym }: Props) {
           </span>
         )}
       </CardHeader>
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <form onSubmit={handleSubmit} className="space-y-3">
           <Textarea
             name="contract_template"
@@ -86,7 +86,7 @@ export function ContractTemplateBuilder({ gym }: Props) {
 // — same content structure (letterhead, divider, body, signature footer),
 // styled as a page rather than an app panel so it visually reads as "this
 // is the document," not another dashboard card.
-function ContractPdfPreview({ gym, bodyText, memberName }: { gym: Gym; bodyText: string; memberName: string }) {
+function ContractPdfPreview({ gym, bodyText, memberName }: { gym: ClientGym; bodyText: string; memberName: string }) {
   const paragraphs = bodyText.split(/\n{2,}/);
   const contactLine = [gym.address, gym.phone, gym.email].filter(Boolean).join(" · ");
 
@@ -102,7 +102,7 @@ function ContractPdfPreview({ gym, bodyText, memberName }: { gym: Gym; bodyText:
       <div className="border-b border-[#ccc] mb-3" />
       <div className="text-[11px] font-medium uppercase tracking-wide mb-3">Membership Agreement</div>
       {paragraphs.map((p, i) => (
-        <p key={i} className="mb-2.5">{p}</p>
+        <p key={i} className="mb-2.5 whitespace-pre-line">{p}</p>
       ))}
       <div className="flex justify-between mt-8 gap-4">
         <div className="flex-1">

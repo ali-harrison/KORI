@@ -1,8 +1,9 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase";
-import { getGym, getMember } from "@/lib/queries";
+import { getGym, getMember, requireSession, DEV_BYPASS } from "@/lib/queries";
+import * as DEMO from "@/lib/dev-store";
 import { getGoCardlessGymClient, createBillingRequest, createBillingRequestFlow } from "@/lib/gocardless";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 // Starts the GoCardless Billing Request Flow for a member: creates the
@@ -11,20 +12,26 @@ import { redirect } from "next/navigation";
 // hosted flow, then redirects the browser to GoCardless's hosted page. On
 // completion GoCardless redirects to app/api/gocardless/billing-callback,
 // which fulfils the billing request and stores the resulting identifiers.
-export async function startBillingForMember(memberId: string): Promise<{ error: string }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+export async function startBillingForMember(memberId: string): Promise<{ error: string } | { success: true }> {
+  await requireSession();
 
   const gym = await getGym();
-  if (!gym.gc_access_token || !gym.gc_organisation_id) {
-    return { error: "Connect GoCardless in Settings before setting up direct debit." };
-  }
-
   const member = await getMember(memberId, gym.id);
   if (!member) return { error: "Member not found" };
   const plan = member.plan;
   if (!plan) return { error: "Assign a plan to this member before setting up billing" };
+
+  // No hosted bank page to send anyone to in the demo — this lands the member
+  // where billing-callback would have left them.
+  if (DEV_BYPASS) {
+    DEMO.startDirectDebit(memberId);
+    revalidatePath("/dashboard", "layout");
+    return { success: true };
+  }
+
+  if (!gym.gc_access_token || !gym.gc_organisation_id) {
+    return { error: "Connect GoCardless in Settings before setting up direct debit." };
+  }
 
   const client = getGoCardlessGymClient(gym.gc_access_token);
   const amountMinorUnits = String(Math.round(plan.price * 100));

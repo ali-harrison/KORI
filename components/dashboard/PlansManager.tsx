@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Badge, Button, Modal } from "@/components/ui";
 import { Input, Select, Textarea } from "@/components/ui/Input";
 import { ConfirmModal } from "@/components/ui/Modal";
-import { createPlan, togglePlanActive, deletePlan } from "@/app/actions/plans";
+import { createPlan, updatePlan, togglePlanActive, deletePlan } from "@/app/actions/plans";
 import { formatCurrency, formatBillingIntervalSuffix } from "@/utils";
 import type { Plan } from "@/types";
 
@@ -16,43 +16,62 @@ interface Props {
 }
 
 export function PlansManager({ plans, gymId }: Props) {
-  const [showCreate, setShowCreate] = useState(false);
+  // One modal for both: null = closed, "new" = create, a plan = edit it.
+  const [editing, setEditing] = useState<PlanWithCount | "new" | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PlanWithCount | null>(null);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
   const [pricingModel, setPricingModel] = useState<"recurring" | "paid_in_full">("recurring");
   const [isPending, startTransition] = useTransition();
 
-  function closeCreate() {
-    setShowCreate(false);
-    setCreateError(null);
-    setPricingModel("recurring");
+  const planBeingEdited = editing && editing !== "new" ? editing : null;
+
+  function openForm(target: PlanWithCount | "new") {
+    setEditing(target);
+    setFormError(null);
+    setPricingModel(target === "new" ? "recurring" : target.pricing_model);
   }
 
-  function handleCreate(e: React.FormEvent<HTMLFormElement>) {
+  function closeDelete() {
+    setDeleteTarget(null);
+    setDeleteError(null);
+  }
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setCreateError(null);
+    setFormError(null);
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      const result = await createPlan(gymId, formData);
+      const result = planBeingEdited
+        ? await updatePlan(planBeingEdited.id, gymId, formData)
+        : await createPlan(gymId, formData);
       if ("error" in result) {
-        setCreateError(result.error);
+        setFormError(result.error);
       } else {
-        closeCreate();
+        setEditing(null);
       }
     });
   }
 
   function handleToggle(plan: PlanWithCount) {
+    setToggleError(null);
     startTransition(async () => {
-      await togglePlanActive(plan.id, gymId, !plan.active);
+      const result = await togglePlanActive(plan.id, gymId, !plan.active);
+      if ("error" in result) setToggleError(result.error);
     });
   }
 
   function handleDelete() {
     if (!deleteTarget) return;
+    setDeleteError(null);
     startTransition(async () => {
       const result = await deletePlan(deleteTarget.id, gymId);
-      if (!result?.error) setDeleteTarget(null);
+      if ("error" in result) {
+        setDeleteError(result.error);
+      } else {
+        setDeleteTarget(null);
+      }
     });
   }
 
@@ -62,12 +81,14 @@ export function PlansManager({ plans, gymId }: Props) {
         <span className="text-[17px] font-medium">Plans</span>
         <span className="text-[13px] text-[#646c66]">{plans.length} plans</span>
         <div className="flex-1" />
-        <Button variant="primary" size="sm" onClick={() => setShowCreate(true)}>
+        <Button variant="primary" size="sm" onClick={() => openForm("new")}>
           New plan
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      {toggleError && <p className="text-xs text-[#cf9a90] mb-3">{toggleError}</p>}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {plans.map((plan) => (
           <div
             key={plan.id}
@@ -106,7 +127,12 @@ export function PlansManager({ plans, gymId }: Props) {
                   {plan.members === 1 ? "member" : "members"}
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+              {/* Reveal-on-hover only where hover exists: on touch screens these
+                  would otherwise be invisible and unreachable. */}
+              <div className="flex items-center gap-1.5 transition-opacity duration-150 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within:opacity-100">
+                <Button variant="ghost" size="sm" onClick={() => openForm(plan)} disabled={isPending}>
+                  Edit
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -118,7 +144,10 @@ export function PlansManager({ plans, gymId }: Props) {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setDeleteTarget(plan)}
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(plan);
+                  }}
                   disabled={isPending}
                 >
                   Delete
@@ -130,7 +159,7 @@ export function PlansManager({ plans, gymId }: Props) {
 
         {/* Ghost add card */}
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => openForm("new")}
           className="rounded-[10px] border border-dashed border-[#262b27] p-5 flex flex-col items-center justify-center gap-2 text-[#646c66] hover:border-[#3a403b] hover:text-[#8f978f] hover:bg-[#111412] transition-all duration-150 min-h-[140px]"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -141,26 +170,42 @@ export function PlansManager({ plans, gymId }: Props) {
         </button>
       </div>
 
-      {/* Create modal */}
+      {/* Create / edit modal */}
       <Modal
-        open={showCreate}
-        onClose={closeCreate}
-        title="Create plan"
-        description="Set up a new membership plan for your gym."
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        title={planBeingEdited ? "Edit plan" : "Create plan"}
+        description={
+          planBeingEdited
+            ? "Existing direct debits keep collecting their current amount — changes here apply to new sign-ups."
+            : "Set up a new membership plan for your gym."
+        }
         footer={
           <>
-            <Button variant="ghost" onClick={closeCreate} disabled={isPending}>
+            <Button variant="ghost" onClick={() => setEditing(null)} disabled={isPending}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit" form="create-plan-form" loading={isPending}>
-              Create plan
+            <Button variant="primary" type="submit" form="plan-form" loading={isPending}>
+              {planBeingEdited ? "Save changes" : "Create plan"}
             </Button>
           </>
         }
       >
-        <form id="create-plan-form" onSubmit={handleCreate} className="space-y-4">
-          <Input label="Plan name" name="name" placeholder="Monthly Unlimited" required autoFocus />
-          <Textarea label="Description" name="description" placeholder="Full gym access, 24/7" />
+        <form id="plan-form" onSubmit={handleSubmit} className="space-y-4">
+          <Input
+            label="Plan name"
+            name="name"
+            placeholder="Monthly Unlimited"
+            defaultValue={planBeingEdited?.name}
+            required
+            autoFocus
+          />
+          <Textarea
+            label="Description"
+            name="description"
+            placeholder="Full gym access, 24/7"
+            defaultValue={planBeingEdited?.description ?? undefined}
+          />
 
           <div className="flex items-center gap-1.5 p-1 rounded-[7px] bg-[#0d100e] border border-[#1f2420]">
             {(["recurring", "paid_in_full"] as const).map((m) => (
@@ -182,10 +227,20 @@ export function PlansManager({ plans, gymId }: Props) {
 
           {pricingModel === "recurring" ? (
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Price (NZD)" name="price" type="number" placeholder="15" min="0.01" step="0.01" required />
+              <Input
+                label="Price (NZD)"
+                name="price"
+                type="number"
+                placeholder="15"
+                min="0.01"
+                step="0.01"
+                defaultValue={planBeingEdited?.price}
+                required
+              />
               <Select
                 label="Billing interval"
                 name="billing_interval"
+                defaultValue={planBeingEdited?.billing_interval ?? "weekly"}
                 options={[
                   { value: "weekly", label: "Weekly" },
                   { value: "monthly", label: "Monthly" },
@@ -195,19 +250,37 @@ export function PlansManager({ plans, gymId }: Props) {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Total price (NZD)" name="price" type="number" placeholder="799" min="0.01" step="0.01" required />
-              <Input label="Term (months)" name="term_months" type="number" placeholder="12" min="1" step="1" required />
+              <Input
+                label="Total price (NZD)"
+                name="price"
+                type="number"
+                placeholder="799"
+                min="0.01"
+                step="0.01"
+                defaultValue={planBeingEdited?.price}
+                required
+              />
+              <Input
+                label="Term (months)"
+                name="term_months"
+                type="number"
+                placeholder="12"
+                min="1"
+                step="1"
+                defaultValue={planBeingEdited?.term_months ?? undefined}
+                required
+              />
             </div>
           )}
 
-          {createError && <p className="text-xs text-[#cf9a90]">{createError}</p>}
+          {formError && <p className="text-xs text-[#cf9a90]">{formError}</p>}
         </form>
       </Modal>
 
       {/* Delete confirm */}
       <ConfirmModal
         open={!!deleteTarget}
-        onClose={() => setDeleteTarget(null)}
+        onClose={closeDelete}
         onConfirm={handleDelete}
         title={`Delete "${deleteTarget?.name}"?`}
         description={
@@ -218,6 +291,7 @@ export function PlansManager({ plans, gymId }: Props) {
         confirmLabel="Delete plan"
         loading={isPending}
         variant="danger"
+        error={deleteError}
       />
     </>
   );

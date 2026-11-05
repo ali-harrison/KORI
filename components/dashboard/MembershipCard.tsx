@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Card, CardTitle, Badge, Button } from "@/components/ui";
 import { DirectDebitSetup } from "@/components/dashboard/DirectDebitSetup";
 import { ChangePlanModal } from "@/components/dashboard/ChangePlanModal";
-import { formatCurrency, formatBillingIntervalSuffix } from "@/utils";
+import { formatCurrency, formatBillingIntervalSuffix, MEMBER_STATUS_LABEL, MEMBER_STATUS_VARIANT } from "@/utils";
 import type { MemberWithPlan, Plan } from "@/types";
 
 interface Props {
@@ -36,7 +36,7 @@ export function MembershipCard({ member, gymId, plans }: Props) {
                   </span>
                 </div>
               </div>
-              <Badge variant="accent">Active</Badge>
+              <Badge variant={MEMBER_STATUS_VARIANT[member.status]}>{MEMBER_STATUS_LABEL[member.status]}</Badge>
             </div>
           </div>
           <Button variant="ghost" size="sm" className="w-full mt-3" onClick={() => setShowChangePlan(true)}>
@@ -54,12 +54,14 @@ export function MembershipCard({ member, gymId, plans }: Props) {
       )}
 
       <ChangePlanModal
+        key={String(showChangePlan)}
         open={showChangePlan}
         onClose={() => setShowChangePlan(false)}
         memberId={member.id}
         gymId={gymId}
         currentPlanId={member.plan_id}
         plans={plans}
+        hasSubscription={!!member.gc_subscription_id}
       />
     </Card>
   );

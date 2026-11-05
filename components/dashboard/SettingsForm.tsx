@@ -7,10 +7,11 @@ import { Input } from "@/components/ui/Input";
 import { updateGym } from "@/app/actions/gym";
 import { ContractTemplateBuilder } from "@/components/dashboard/ContractTemplateBuilder";
 import { ReminderTemplateBuilder } from "@/components/dashboard/ReminderTemplateBuilder";
-import type { Gym } from "@/types";
+import { AppearanceCard } from "@/components/dashboard/AppearanceCard";
+import type { ClientGym } from "@/types";
 
 interface Props {
-  gym: Gym;
+  gym: ClientGym;
 }
 
 export function SettingsForm({ gym }: Props) {
@@ -30,6 +31,7 @@ export function SettingsForm({ gym }: Props) {
         missing_params: "Invalid response from GoCardless.",
         state_mismatch: "OAuth state mismatch — please try again.",
         exchange_failed: "Failed to exchange authorisation code.",
+        not_configured: "GoCardless isn't set up on this deployment yet.",
       };
       setGcNotice({ type: "error", message: messages[code!] ?? "GoCardless connection failed." });
     }
@@ -68,18 +70,9 @@ export function SettingsForm({ gym }: Props) {
           )}
         </CardHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="Gym name" name="name" defaultValue={gym.name} required />
-            <Input
-              label="Slug"
-              name="slug"
-              defaultValue={gym.slug}
-              hint={`kori.gym/${gym.slug}`}
-              disabled
-            />
-          </div>
+          <Input label="Gym name" name="name" defaultValue={gym.name} required />
           <Input label="Address" name="address" defaultValue={gym.address ?? ""} />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input label="Phone" name="phone" defaultValue={gym.phone ?? ""} />
             <Input label="Email" name="email" type="email" defaultValue={gym.email ?? ""} />
           </div>
@@ -119,7 +112,7 @@ export function SettingsForm({ gym }: Props) {
             Connect your GoCardless account to collect recurring direct debits from members.
             Funds go directly to your bank account on your GoCardless settlement schedule.
           </p>
-          <div className="flex items-center gap-3 p-4 rounded-[8px] bg-[#0d100e] border border-[#1f2420]">
+          <div className="flex flex-wrap items-center gap-3 p-4 rounded-[8px] bg-[#0d100e] border border-[#1f2420]">
             <div className="w-8 h-8 rounded-[7px] bg-[#151a16] border border-[#232823] flex items-center justify-center flex-shrink-0">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-[#8f978f]">
                 <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -158,6 +151,7 @@ export function SettingsForm({ gym }: Props) {
 
       <ContractTemplateBuilder gym={gym} />
       <ReminderTemplateBuilder gym={gym} />
+      <AppearanceCard />
     </div>
   );
 }

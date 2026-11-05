@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Wordmark } from "@/components/ui/Wordmark";
 import { createGym } from "@/app/actions/gym";
-import { slugify } from "@/utils";
 
 export default function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
@@ -23,13 +23,11 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0d0c] flex items-center justify-center p-6">
+    <div className="min-h-dvh bg-[#0b0d0c] flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        <div className="flex items-center gap-2.5 mb-10">
-          <div className="w-7 h-7 rounded-[7px] bg-[#151a16] border border-[#232823] flex items-center justify-center">
-            <span className="text-[10px] font-medium text-[var(--accent)]">KG</span>
-          </div>
-          <span className="text-sm font-medium text-[#e7eae8]">KORI/GYM</span>
+        <div className="mb-10">
+          <Wordmark />
+          <div className="text-[11px] text-[#59615b] mt-0.5">gym operations</div>
         </div>
 
         <div className="space-y-6">
@@ -47,10 +45,9 @@ export default function OnboardingPage() {
               onChange={(e) => setName(e.target.value)}
               required
               autoFocus
-              hint={name ? `Your URL: kori.gym/${slugify(name)}` : undefined}
             />
             <Input label="Address" name="address" placeholder="12 Harbour Road, Southport" />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Phone" name="phone" type="tel" placeholder="+64 21 555 0100" />
               <Input label="Gym email" name="email" type="email" placeholder="info@gym.co.nz" />
             </div>

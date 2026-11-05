@@ -5,13 +5,13 @@ interface MandateBarProps {
   summary: MandateSummary;
 }
 
-const SEGMENT_ORDER: MandateBadgeState[] = ["active", "pending", "cancelling", "failed", "cancelled", "none"];
+const SEGMENT_ORDER: MandateBadgeState[] = ["active", "pending", "cancelling", "on_hold", "cancelled", "none"];
 
 const SEGMENT_COLOR: Record<MandateBadgeState, string> = {
   active: "#3fb389",
   pending: "#cba55e",
   cancelling: "#a8823f",
-  failed: "#cf7263",
+  on_hold: "#cf7263",
   cancelled: "#7d857f",
   none: "#454c47",
 };

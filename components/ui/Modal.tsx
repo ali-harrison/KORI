@@ -9,7 +9,7 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   description?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   footer?: React.ReactNode;
   size?: "sm" | "md" | "lg";
 }
@@ -120,7 +120,7 @@ export function Modal({
         aria-labelledby="modal-title"
         tabIndex={-1}
         className={cn(
-          "relative w-full outline-none",
+          "relative w-full outline-none max-h-[calc(100dvh-2rem)] overflow-y-auto",
           "bg-[#111412] rounded-[10px]",
           "border border-[#1f2420]",
           "animate-[so-fade_150ms_ease]",
@@ -149,7 +149,7 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5">{children}</div>
+        {children && <div className="px-6 py-5">{children}</div>}
 
         {/* Footer */}
         {footer && (
@@ -205,7 +205,7 @@ export function ConfirmModal({
         </>
       }
     >
-      {error ? <p className="text-xs text-[#cf9a90]">{error}</p> : <div />}
+      {error ? <p className="text-xs text-[#cf9a90]">{error}</p> : null}
     </Modal>
   );
 }

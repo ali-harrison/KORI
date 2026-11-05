@@ -180,7 +180,7 @@ async function main() {
     payments.push({
       gym_id: gymId, member_id: member.id, plan_id: plan.id, amount, currency: "NZD",
       provider: "manual", type: plan.pricing_model === "recurring" ? "recurring" : "one_off",
-      status: "succeeded", paid_at: daysAgoIso(ago),
+      status: "succeeded", paid_at: daysAgoIso(ago), note,
     });
 
   addSucceeded(byFirstName("Emma"), weekly, 18, 1, "Bank transfer");

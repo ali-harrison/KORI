@@ -1,13 +1,10 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getGym, getMember, getMemberContracts, DEV_BYPASS } from "@/lib/queries";
-import { sendContractEmail } from "@/lib/resend";
-import { renderContractPdf } from "@/lib/contract-pdf";
-import { renderTemplate } from "@/lib/templates";
-import { formatDate, formatPlanPrice } from "@/utils";
+import { getGym, getMember, getMemberContracts, requireSession, DEV_BYPASS } from "@/lib/queries";
+import * as DEMO from "@/lib/dev-store";
+import { isEmailConfigured, sendContractEmail } from "@/lib/resend";
+import { renderMemberContractPdf } from "@/lib/contract-pdf";
 
 const CONTRACTS_BUCKET = "contracts";
 
@@ -20,9 +17,7 @@ export async function sendContract(
   memberId: string,
   gymId: string
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   const [gym, member, contracts] = await Promise.all([
     getGym(),
@@ -31,14 +26,11 @@ export async function sendContract(
   ]);
   if (!member) return { error: "Member not found" };
 
+  if (!DEV_BYPASS && !isEmailConfigured()) {
+    return { error: "Email sending isn't set up yet, so this contract wasn't sent." };
+  }
+
   const memberName = `${member.first_name} ${member.last_name}`;
-  const bodyText = renderTemplate(gym.contract_template, {
-    member_name: memberName,
-    gym_name: gym.name,
-    plan_name: member.plan?.name ?? "—",
-    amount: member.plan ? formatPlanPrice(member.plan) : "—",
-    start_date: formatDate(member.start_date ?? member.created_at),
-  });
 
   // Separate from the email try/catch below — @react-pdf/image does a
   // real fetch() for a remote logo URL, so this is real network I/O, not
@@ -46,16 +38,7 @@ export async function sendContract(
   // PDF-generation failure, not an email-send failure.
   let pdfBuffer: Buffer;
   try {
-    pdfBuffer = await renderContractPdf({
-      gymName: gym.name,
-      gymAddress: gym.address,
-      gymPhone: gym.phone,
-      gymEmail: gym.email,
-      logoUrl: gym.logo_url,
-      bodyText,
-      memberName,
-      date: formatDate(new Date()),
-    });
+    pdfBuffer = await renderMemberContractPdf(gym, member);
   } catch (err) {
     console.error("Failed to generate contract PDF", err);
     return { error: "Failed to generate the contract PDF. Try again." };
@@ -63,14 +46,12 @@ export async function sendContract(
 
   const pending = contracts.find((c) => c.status === "pending");
 
-  // DEV_BYPASS pages render fixture data (fake gymId/memberId/contract ids
-  // that aren't real rows) — skip the email send AND the Supabase write
-  // together here, not just the network call, since a write using fake
-  // ids would hit real Supabase and fail (invalid uuid). PDF generation
-  // above still runs — it's pure/local given the dev fixture's null
-  // logo_url, and useful to sanity-check while developing.
+  // No email leaves demo mode. PDF generation above still ran for real, so a
+  // broken template fails here exactly as it would in production.
   if (DEV_BYPASS) {
-    console.log(`[dev] Would send contract PDF email to ${member.email} and skip the DB write`);
+    console.log(`[demo] Would email contract PDF to ${member.email}`);
+    DEMO.sendContract(memberId);
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   }
 
@@ -121,8 +102,7 @@ export async function sendContract(
 
   if (error) return { error: error.message };
 
-  revalidatePath(`/dashboard/members/${memberId}`);
-  revalidatePath("/dashboard/contracts");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
@@ -134,12 +114,10 @@ export async function getContractDownloadUrl(
   contractId: string,
   gymId: string
 ): Promise<{ url: string } | { error: string }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   if (DEV_BYPASS) {
-    return { error: "No PDF available in dev mode — this is fixture data, not a real stored contract." };
+    return { url: `/api/demo/contract/${contractId}` };
   }
 
   const { data: contract, error } = await supabase
@@ -172,24 +150,20 @@ export async function markContractSigned(
   gymId: string,
   memberId: string
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — markContractSigned(${contractId})`);
-    return { success: true };
+    DEMO.markContractSigned(contractId);
+  } else {
+    const { error } = await supabase
+      .from("contracts")
+      .update({ status: "signed", signed_at: new Date().toISOString() })
+      .eq("id", contractId)
+      .eq("gym_id", gymId);
+
+    if (error) return { error: error.message };
   }
 
-  const { error } = await supabase
-    .from("contracts")
-    .update({ status: "signed", signed_at: new Date().toISOString() })
-    .eq("id", contractId)
-    .eq("gym_id", gymId);
-
-  if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/members/${memberId}`);
-  revalidatePath("/dashboard/contracts");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }

@@ -5,9 +5,13 @@ function getResend() {
   return new Resend(process.env.RESEND_API_KEY!);
 }
 
-// TODO: kori.gym needs to be a verified sending domain in the Resend
-// account for this to actually deliver — not something fixable from code.
-const FROM = "kori/os <noreply@kori.gym>";
+export function isEmailConfigured(): boolean {
+  return !!process.env.RESEND_API_KEY;
+}
+
+// Must be an address on a domain verified in the Resend account, or every
+// send gets rejected.
+const FROM = process.env.EMAIL_FROM || "kori/os <noreply@kori.gym>";
 
 function escapeHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

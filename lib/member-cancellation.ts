@@ -14,8 +14,8 @@ import type { createServerSupabaseClient } from "@/lib/supabase";
 // so the UI can show a transitional "Cancelling" state — it never writes
 // members.status = 'cancelled' itself for a direct-debit member. The
 // existing mandates.cancelled webhook (handleMandateCancelled in
-// lib/gocardless-webhook.ts) is what flips status to its terminal paused/
-// null-mandate shape once GoCardless actually confirms it.
+// lib/gocardless-webhook.ts) is what writes the terminal cancelled status
+// once GoCardless actually confirms it.
 
 export type MembersClient = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 

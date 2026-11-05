@@ -1,12 +1,13 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase";
+import type { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { getGym, getMember, DEV_BYPASS } from "@/lib/queries";
+import { getGym, getMember, requireSession, DEV_BYPASS } from "@/lib/queries";
+import * as DEMO from "@/lib/dev-store";
 import { getGoCardlessGymClient } from "@/lib/gocardless";
 import { cancelMemberBilling } from "@/lib/member-cancellation";
 import type { MemberStatus } from "@/types";
+import { toLocalISODate } from "@/utils";
 
 // Shared by createMember and assignMemberPlan — a <select> only ever lists
 // this gym's own plans, but the action itself has no way to know that
@@ -38,31 +39,21 @@ export async function updateMemberStatus(
   gymId: string,
   status: Exclude<MemberStatus, "cancelled">
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
-  // DEV_BYPASS pages render fixture data (e.g. gymId "dev-gym-id") that
-  // isn't a real row — a write using it would hit real Supabase and fail
-  // (invalid uuid, foreign key, etc). No fixture write-back exists, so
-  // this just no-ops the same way DEV_BYPASS-guarded network calls do
-  // elsewhere (app/actions/contracts.ts, reminders.ts).
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — updateMemberStatus(${memberId}, ${status})`);
-    return { success: true };
+    DEMO.setMemberStatus(memberId, status);
+  } else {
+    const { error } = await supabase
+      .from("members")
+      .update({ status })
+      .eq("id", memberId)
+      .eq("gym_id", gymId);
+
+    if (error) return { error: error.message };
   }
 
-  const { error } = await supabase
-    .from("members")
-    .update({ status })
-    .eq("id", memberId)
-    .eq("gym_id", gymId);
-
-  if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/members/${memberId}`);
-  revalidatePath("/dashboard/members");
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
@@ -77,12 +68,11 @@ export async function cancelMember(
   memberId: string,
   gymId: string
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — cancelMember(${memberId})`);
+    DEMO.cancelMember(memberId);
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   }
 
@@ -95,10 +85,7 @@ export async function cancelMember(
   const result = await cancelMemberBilling(member, gymId, supabase, gcClient);
   if (!result.ok) return { error: result.error };
 
-  revalidatePath(`/dashboard/members/${memberId}`);
-  revalidatePath("/dashboard/members");
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/billing");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
@@ -106,9 +93,7 @@ export async function createMember(
   gymId: string,
   formData: FormData
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   const first_name = (formData.get("first_name") as string)?.trim();
   const last_name = (formData.get("last_name") as string)?.trim();
@@ -124,7 +109,9 @@ export async function createMember(
   }
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — createMember(${gymId}, ${email})`);
+    const result = DEMO.createMember({ first_name, last_name, email, phone: phone || null, plan_id });
+    if (result) return result;
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   }
 
@@ -144,7 +131,7 @@ export async function createMember(
     phone: phone || null,
     plan_id: plan_id || null,
     status: "pending",
-    start_date: new Date().toISOString().split("T")[0],
+    start_date: toLocalISODate(),
   });
 
   if (error) {
@@ -154,8 +141,7 @@ export async function createMember(
     return { error: error.message };
   }
 
-  revalidatePath("/dashboard/members");
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
@@ -169,28 +155,24 @@ export async function assignMemberPlan(
   gymId: string,
   planId: string | null
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — assignMemberPlan(${memberId}, ${planId})`);
-    return { success: true };
+    DEMO.assignMemberPlan(memberId, planId);
+  } else {
+    if (!(await isValidPlanForGym(supabase, planId, gymId))) {
+      return { error: "Invalid plan selected" };
+    }
+
+    const { error } = await supabase
+      .from("members")
+      .update({ plan_id: planId })
+      .eq("id", memberId)
+      .eq("gym_id", gymId);
+
+    if (error) return { error: error.message };
   }
 
-  if (!(await isValidPlanForGym(supabase, planId, gymId))) {
-    return { error: "Invalid plan selected" };
-  }
-
-  const { error } = await supabase
-    .from("members")
-    .update({ plan_id: planId })
-    .eq("id", memberId)
-    .eq("gym_id", gymId);
-
-  if (error) return { error: error.message };
-
-  revalidatePath(`/dashboard/members/${memberId}`);
-  revalidatePath("/dashboard/members");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }

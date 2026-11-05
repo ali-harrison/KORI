@@ -1,262 +1,291 @@
-import type {
-  Gym, Plan, MemberWithPlan, ContractWithMember, DashboardStats, Payment, FailedPaymentAlert,
-  UpcomingCharge, SubmissionDaySummary, MandateSummary, ActivityItem,
-} from "@/types";
+import type { Contract, Gym, Member, MemberStatus, Payment, Plan } from "@/types";
 import { DEFAULT_CONTRACT_TEMPLATE, DEFAULT_OVERDUE_EMAIL_SUBJECT, DEFAULT_OVERDUE_EMAIL_BODY } from "@/lib/templates";
+import { toLocalISODate } from "@/utils";
 
-export const DEV_GYM: Gym = {
-  id: "dev-gym-id",
-  owner_id: "dev-user-id",
-  name: "Southerly Strength",
-  slug: "southerly-strength",
-  logo_url: null,
-  address: "12 Harbour Road, Southport",
-  phone: "+64 21 555 0100",
-  email: "hello@example.com",
-  stripe_account_id: null,
-  stripe_onboarding_complete: false,
-  gc_organisation_id: null,
-  gc_access_token: null,
-  subscription_status: "trial",
-  contract_template: DEFAULT_CONTRACT_TEMPLATE,
-  overdue_email_subject: DEFAULT_OVERDUE_EMAIL_SUBJECT,
-  overdue_email_body: DEFAULT_OVERDUE_EMAIL_BODY,
-  created_at: "2025-01-15T00:00:00Z",
-};
+// Demo-mode seed data: one consistent set of rows, dated relative to today so
+// the demo never goes stale. Nothing here is a pre-computed total — every
+// number on screen is derived from these rows by lib/dev-store.ts, so the
+// dashboard, member list and billing page can't contradict each other.
+// Emails use example.com so no fixture can ever be a real person's address.
 
-const PLAN_WEEKLY: Plan = {
-  id: "plan-weekly",
-  gym_id: "dev-gym-id",
-  name: "Weekly Direct Debit",
-  description: "Full gym access, billed weekly",
-  price: 18,
-  pricing_model: "recurring",
-  billing_interval: "weekly",
-  term_months: null,
-  stripe_price_id: null,
-  active: true,
-  created_at: "2025-01-15T00:00:00Z",
-};
+export const DEMO_GYM_ID = "dev-gym-id";
+export const DEMO_USER = { id: "dev-user-id", email: "owner@example.com" };
 
-const PLAN_PIF_12MO: Plan = {
-  id: "plan-pif-12mo",
-  gym_id: "dev-gym-id",
-  name: "12-Month Paid in Full",
-  description: "Best value — pay upfront and save",
-  price: 799,
-  pricing_model: "paid_in_full",
-  billing_interval: null,
-  term_months: 12,
-  stripe_price_id: null,
-  active: true,
-  created_at: "2025-01-15T00:00:00Z",
-};
+export interface DemoState {
+  gym: Gym;
+  plans: Plan[];
+  members: Member[];
+  contracts: Contract[];
+  payments: Payment[];
+}
 
-const PLAN_PIF_3MO: Plan = {
-  id: "plan-pif-3mo",
-  gym_id: "dev-gym-id",
-  name: "3-Month Paid in Full",
-  description: "Short-term commitment, paid upfront",
-  price: 249,
-  pricing_model: "paid_in_full",
-  billing_interval: null,
-  term_months: 3,
-  stripe_price_id: null,
-  active: true,
-  created_at: "2025-01-15T00:00:00Z",
-};
+const DAY_MS = 86400000;
 
-export const DEV_PLANS = [PLAN_WEEKLY, PLAN_PIF_12MO, PLAN_PIF_3MO];
+type PlanKey = "weekly" | "pif12" | "pif3";
 
-export const DEV_PLANS_WITH_COUNT = [
-  { ...PLAN_WEEKLY,   members: 28 },
-  { ...PLAN_PIF_12MO, members: 11 },
-  { ...PLAN_PIF_3MO,  members: 4  },
+// How a member pays, which decides their GoCardless fields and history:
+//   dd        — live mandate; recurring plans also get a subscription
+//   cash      — never on direct debit
+//   ex-dd     — had a mandate that's since been cancelled
+type Billing = "dd" | "cash" | "ex-dd";
+
+interface MemberSeed {
+  first: string;
+  last: string;
+  plan: PlanKey;
+  status: MemberStatus;
+  billing: Billing;
+  joinedDaysAgo: number;
+  // Weekly direct debits run in two cohorts, so the billing page shows a real
+  // spread of collection days. The number is how long ago the last charge was.
+  lastChargeDaysAgo?: 2 | 5;
+  // A charge that bounced — lands in Needs attention, member goes on hold.
+  failedLatestCharge?: boolean;
+  // Mandate set up, first payment not confirmed yet.
+  awaitingFirstPayment?: boolean;
+  cancelling?: boolean;
+  contract?: "signed" | "pending" | "none";
+}
+
+// Order fixes the ids (mem-1, mem-2, ...).
+const MEMBER_SEEDS: MemberSeed[] = [
+  { first: "Sarah", last: "Mitchell", plan: "weekly", status: "active", billing: "dd", joinedDaysAgo: 290, lastChargeDaysAgo: 5 },
+  { first: "Liam", last: "Taufa", plan: "pif12", status: "active", billing: "dd", joinedDaysAgo: 262 },
+  { first: "Aroha", last: "Ngata", plan: "weekly", status: "paused", billing: "dd", joinedDaysAgo: 244, lastChargeDaysAgo: 2, failedLatestCharge: true },
+  { first: "James", last: "Park", plan: "pif3", status: "paused", billing: "dd", joinedDaysAgo: 75 },
+  { first: "Mia", last: "Chen", plan: "weekly", status: "pending", billing: "dd", joinedDaysAgo: 3, awaitingFirstPayment: true, contract: "pending" },
+  { first: "Tane", last: "Walker", plan: "pif12", status: "active", billing: "cash", joinedDaysAgo: 228 },
+  { first: "Priya", last: "Sharma", plan: "weekly", status: "cancelled", billing: "cash", joinedDaysAgo: 281 },
+  { first: "Kahu", last: "Ropata", plan: "weekly", status: "paused", billing: "ex-dd", joinedDaysAgo: 215 },
+  { first: "Ngahuia", last: "Reid", plan: "weekly", status: "active", billing: "dd", joinedDaysAgo: 199, lastChargeDaysAgo: 5, cancelling: true },
+  { first: "Emma", last: "Thompson", plan: "weekly", status: "active", billing: "dd", joinedDaysAgo: 170, lastChargeDaysAgo: 2 },
+  { first: "Jayden", last: "Tamati", plan: "weekly", status: "active", billing: "dd", joinedDaysAgo: 142, lastChargeDaysAgo: 5 },
+  { first: "Grace", last: "Wallace", plan: "pif12", status: "active", billing: "dd", joinedDaysAgo: 121 },
+  { first: "Kane", last: "Fa'amausili", plan: "pif12", status: "active", billing: "cash", joinedDaysAgo: 150 },
+  { first: "Chloe", last: "Anderson", plan: "pif3", status: "active", billing: "dd", joinedDaysAgo: 31 },
+  { first: "Ben", last: "Richardson", plan: "pif12", status: "active", billing: "dd", joinedDaysAgo: 2, contract: "pending" },
+  { first: "Zara", last: "Patel", plan: "weekly", status: "pending", billing: "cash", joinedDaysAgo: 1, contract: "none" },
+  { first: "Ethan", last: "Wiremu", plan: "pif3", status: "pending", billing: "cash", joinedDaysAgo: 2, contract: "none" },
+  { first: "Olivia", last: "Hart", plan: "weekly", status: "cancelled", billing: "ex-dd", joinedDaysAgo: 180 },
+  { first: "Hemi", last: "Parata", plan: "weekly", status: "paused", billing: "dd", joinedDaysAgo: 96, lastChargeDaysAgo: 5, failedLatestCharge: true },
+  { first: "Lucy", last: "Brown", plan: "weekly", status: "active", billing: "dd", joinedDaysAgo: 88, lastChargeDaysAgo: 2 },
+  { first: "Noah", last: "Sione", plan: "weekly", status: "active", billing: "dd", joinedDaysAgo: 64, lastChargeDaysAgo: 2 },
+  { first: "Isla", last: "Tawhiri", plan: "weekly", status: "active", billing: "dd", joinedDaysAgo: 47, lastChargeDaysAgo: 5 },
 ];
 
-export const DEV_MEMBERS: MemberWithPlan[] = [
-  {
-    id: "mem-1", gym_id: "dev-gym-id", user_id: null,
-    first_name: "Sarah", last_name: "Mitchell", email: "sarah.mitchell@example.com", phone: "+64 21 555 1234",
-    plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "active",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: "CU00SARAH01", gc_mandate_id: "MD00SARAH01", gc_subscription_id: "SB00SARAH01",
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-01-20", next_billing_date: "2025-06-20", cancellation_requested_at: null, created_at: "2025-01-20T00:00:00Z",
-  },
-  {
-    id: "mem-2", gym_id: "dev-gym-id", user_id: null,
-    first_name: "Liam", last_name: "Taufa", email: "liam.taufa@example.com", phone: "+64 27 344 8821",
-    plan_id: "plan-pif-12mo", plan: PLAN_PIF_12MO, status: "active",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: "CU00LIAM002", gc_mandate_id: "MD00LIAM002", gc_subscription_id: null,
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-02-01", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-02-01T00:00:00Z",
-  },
-  {
-    id: "mem-3", gym_id: "dev-gym-id", user_id: null,
-    first_name: "Aroha", last_name: "Ngata", email: "aroha.ngata@example.com", phone: "+64 22 100 4455",
-    plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "active",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: "CU00AROHA03", gc_mandate_id: "MD00AROHA03", gc_subscription_id: "SB00AROHA03",
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-02-14", next_billing_date: "2025-06-14", cancellation_requested_at: null, created_at: "2025-02-14T00:00:00Z",
-  },
-  {
-    id: "mem-4", gym_id: "dev-gym-id", user_id: null,
-    first_name: "James", last_name: "Park", email: "jpark92@example.com", phone: "+64 21 678 9900",
-    plan_id: "plan-pif-3mo", plan: PLAN_PIF_3MO, status: "paused",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: "CU00JAMES04", gc_mandate_id: "MD00JAMES04", gc_subscription_id: null,
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-03-05", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-03-05T00:00:00Z",
-  },
-  {
-    id: "mem-5", gym_id: "dev-gym-id", user_id: null,
-    first_name: "Mia", last_name: "Chen", email: "mia.chen@example.com", phone: "+64 21 234 5678",
-    plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "pending",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: "CU00MIACH05", gc_mandate_id: "MD00MIACH05", gc_subscription_id: "SB00MIACH05",
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-05-10", next_billing_date: "2025-06-10", cancellation_requested_at: null, created_at: "2025-05-10T00:00:00Z",
-  },
-  {
-    id: "mem-6", gym_id: "dev-gym-id", user_id: null,
-    first_name: "Tane", last_name: "Walker", email: "tane.walker@example.com", phone: "+64 27 901 2345",
-    plan_id: "plan-pif-12mo", plan: PLAN_PIF_12MO, status: "active",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-03-20", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-03-20T00:00:00Z",
-  },
-  {
-    id: "mem-7", gym_id: "dev-gym-id", user_id: null,
-    first_name: "Priya", last_name: "Sharma", email: "priya.sharma@example.com", phone: null,
-    plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "cancelled",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-01-28", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-01-28T00:00:00Z",
-  },
-  {
-    // Only member showing the "cancelled mandate" state (gc_mandate_id
-    // null + status paused — see getMandateBadgeState) — every other
-    // paused/cancelled fixture above has a different real cause.
-    id: "mem-8", gym_id: "dev-gym-id", user_id: null,
-    first_name: "Kahu", last_name: "Ropata", email: "kahu.ropata@example.com", phone: "+64 21 887 3021",
-    plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "paused",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: null, gc_mandate_id: null, gc_subscription_id: null,
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-04-02", next_billing_date: null, cancellation_requested_at: null, created_at: "2025-04-02T00:00:00Z",
-  },
-  {
-    // Only member showing the "cancelling" state: a cancel was sent to
-    // GoCardless (cancellation_requested_at set) but gc_mandate_id is
-    // still populated because the confirming mandates.cancelled webhook
-    // hasn't landed yet — see getMandateBadgeState.
-    id: "mem-9", gym_id: "dev-gym-id", user_id: null,
-    first_name: "Ngahuia", last_name: "Reid", email: "ngahuia.reid@example.com", phone: "+64 22 445 7810",
-    plan_id: "plan-weekly", plan: PLAN_WEEKLY, status: "active",
-    stripe_customer_id: null, stripe_subscription_id: null,
-    gc_customer_id: "CU00NGAHU09", gc_mandate_id: "MD00NGAHU09", gc_subscription_id: "SB00NGAHU09",
-    invite_token: null, invite_sent_at: null,
-    start_date: "2025-04-18", next_billing_date: "2025-06-18", cancellation_requested_at: "2025-06-12T10:15:00Z", created_at: "2025-04-18T00:00:00Z",
-  },
-];
+const WEEKS_OF_HISTORY = 8;
 
-export const DEV_STATS: DashboardStats = {
-  totalMembers: 43,
-  activeMembers: 38,
-  monthlyRevenue: 3382,
-  failedPayments: 1,
-};
+export function createDemoData(now = new Date()): DemoState {
+  const daysFromNow = (days: number) => new Date(now.getTime() + days * DAY_MS);
+  const dateOnly = (date: Date) => toLocalISODate(date);
+  const utcMidnight = (date: Date) => `${dateOnly(date)}T00:00:00.000Z`;
 
-export const DEV_FAILED_PAYMENT_ALERTS: FailedPaymentAlert[] = [
-  {
-    id: "pay-failed-1",
-    memberId: "mem-3",
-    memberName: "Aroha Ngata",
-    memberEmail: "aroha.ngata@example.com",
-    amount: 15,
-    failedAt: "2025-06-10T08:00:00Z",
-  },
-];
+  const gym: Gym = {
+    id: DEMO_GYM_ID,
+    owner_id: DEMO_USER.id,
+    name: "Southerly Strength",
+    slug: "southerly-strength",
+    logo_url: null,
+    address: "12 Harbour Road, Southport",
+    phone: "+64 21 555 0100",
+    email: "hello@example.com",
+    stripe_account_id: null,
+    stripe_onboarding_complete: false,
+    // Connected, since the members below have live mandates. No token: demo
+    // mode never talks to GoCardless.
+    gc_organisation_id: "OR000DEMO",
+    gc_access_token: null,
+    subscription_status: "trial",
+    contract_template: DEFAULT_CONTRACT_TEMPLATE,
+    overdue_email_subject: DEFAULT_OVERDUE_EMAIL_SUBJECT,
+    overdue_email_body: DEFAULT_OVERDUE_EMAIL_BODY,
+    created_at: daysFromNow(-320).toISOString(),
+  };
 
-export const DEV_CONTRACTS: ContractWithMember[] = [
-  {
-    id: "con-1", gym_id: "dev-gym-id", member_id: "mem-1",
-    template_url: null, pdf_url: "/contracts/sarah-mitchell.pdf",
-    signed_at: "2025-01-20T10:30:00Z", status: "signed", last_sent_at: "2025-01-20T09:00:00Z", created_at: "2025-01-20T09:00:00Z",
-    member: DEV_MEMBERS[0],
-  },
-  {
-    id: "con-2", gym_id: "dev-gym-id", member_id: "mem-2",
-    template_url: null, pdf_url: "/contracts/liam-taufa.pdf",
-    signed_at: "2025-02-01T14:15:00Z", status: "signed", last_sent_at: "2025-02-01T12:00:00Z", created_at: "2025-02-01T12:00:00Z",
-    member: DEV_MEMBERS[1],
-  },
-  {
-    id: "con-3", gym_id: "dev-gym-id", member_id: "mem-3",
-    template_url: null, pdf_url: null,
-    signed_at: "2025-02-14T11:00:00Z", status: "signed", last_sent_at: "2025-02-14T09:30:00Z", created_at: "2025-02-14T09:30:00Z",
-    member: DEV_MEMBERS[2],
-  },
-  {
-    // last_sent_at deliberately later than created_at — exercises the
-    // "Sent" column showing the most recent resend, not the original date.
-    id: "con-4", gym_id: "dev-gym-id", member_id: "mem-5",
-    template_url: null, pdf_url: null,
-    signed_at: null, status: "pending", last_sent_at: "2025-05-17T09:00:00Z", created_at: "2025-05-10T10:00:00Z",
-    member: DEV_MEMBERS[4],
-  },
-];
+  const planBase = {
+    gym_id: DEMO_GYM_ID,
+    stripe_price_id: null,
+    active: true,
+    created_at: gym.created_at,
+  };
 
-export const DEV_PAYMENTS: Payment[] = [
-  {
-    id: "pay-1", gym_id: "dev-gym-id", member_id: "mem-1", plan_id: "plan-weekly",
-    amount: 18, currency: "NZD", provider: "manual", provider_payment_id: null,
-    type: "one_off", status: "succeeded", note: "Cash", gc_event_id: null,
-    paid_at: "2025-06-13T00:00:00Z", created_at: "2025-06-13T09:00:00Z",
-  },
-  {
-    id: "pay-2", gym_id: "dev-gym-id", member_id: "mem-1", plan_id: "plan-weekly",
-    amount: 18, currency: "NZD", provider: "manual", provider_payment_id: null,
-    type: "one_off", status: "succeeded", note: "Cash", gc_event_id: null,
-    paid_at: "2025-06-06T00:00:00Z", created_at: "2025-06-06T09:00:00Z",
-  },
-  {
-    id: "pay-3", gym_id: "dev-gym-id", member_id: "mem-2", plan_id: "plan-pif-12mo",
-    amount: 799, currency: "NZD", provider: "manual", provider_payment_id: null,
-    type: "one_off", status: "succeeded", note: "Bank transfer ref #4471", gc_event_id: null,
-    paid_at: "2025-02-01T00:00:00Z", created_at: "2025-02-01T12:00:00Z",
-  },
-];
+  const plansByKey: Record<PlanKey, Plan> = {
+    weekly: {
+      ...planBase,
+      id: "plan-weekly",
+      name: "Weekly Direct Debit",
+      description: "Full gym access, billed weekly",
+      price: 18,
+      pricing_model: "recurring",
+      billing_interval: "weekly",
+      term_months: null,
+    },
+    pif12: {
+      ...planBase,
+      id: "plan-pif-12mo",
+      name: "12-Month Paid in Full",
+      description: "Best value — pay upfront and save",
+      price: 799,
+      pricing_model: "paid_in_full",
+      billing_interval: null,
+      term_months: 12,
+    },
+    pif3: {
+      ...planBase,
+      id: "plan-pif-3mo",
+      name: "3-Month Paid in Full",
+      description: "Short-term commitment, paid upfront",
+      price: 249,
+      pricing_model: "paid_in_full",
+      billing_interval: null,
+      term_months: 3,
+    },
+  };
 
-export const DEV_UPCOMING_CHARGES: UpcomingCharge[] = [
-  { memberId: "mem-3", memberName: "Aroha Ngata", planName: "Weekly Direct Debit", amount: 18, chargeDate: "2025-06-14" },
-  { memberId: "mem-1", memberName: "Sarah Mitchell", planName: "Weekly Direct Debit", amount: 18, chargeDate: "2025-06-20" },
-];
+  const members: Member[] = [];
+  const contracts: Contract[] = [];
+  const payments: Payment[] = [];
 
-export const DEV_RECENT_SUBMISSIONS: SubmissionDaySummary[] = [
-  { date: "2025-06-13", chargeCount: 1, succeededCount: 1, succeededValue: 15, failedCount: 0, status: "clear" },
-  { date: "2025-06-10", chargeCount: 1, succeededCount: 0, succeededValue: 0, failedCount: 1, status: "all_failed" },
-  { date: "2025-06-06", chargeCount: 1, succeededCount: 1, succeededValue: 15, failedCount: 0, status: "clear" },
-];
+  function addPayment(
+    seed: Partial<Payment> & Pick<Payment, "member_id" | "plan_id" | "amount" | "provider" | "type" | "status" | "created_at">
+  ) {
+    payments.push({
+      id: `pay-${payments.length + 1}`,
+      gym_id: DEMO_GYM_ID,
+      currency: "NZD",
+      provider_payment_id: null,
+      note: null,
+      gc_event_id: null,
+      paid_at: null,
+      ...seed,
+    });
+  }
 
-// Matches DEV_MEMBERS' gc_mandate_id/status/cancellation_requested_at
-// combinations exactly (see getMandateBadgeState): active × 3 (mem-1,
-// mem-2, mem-3), pending × 1 (mem-5), cancelling × 1 (mem-9), failed × 1
-// (mem-4), cancelled × 1 (mem-8), none × 2 (mem-6, mem-7).
-export const DEV_MANDATE_SUMMARY: MandateSummary = {
-  active: 3, pending: 1, cancelling: 1, failed: 1, cancelled: 1, none: 2, total: 9,
-};
+  MEMBER_SEEDS.forEach((seed, index) => {
+    const id = `mem-${index + 1}`;
+    const plan = plansByKey[seed.plan];
+    const joined = daysFromNow(-seed.joinedDaysAgo);
+    const onDirectDebit = seed.billing === "dd";
+    const recurringDebit = onDirectDebit && plan.pricing_model === "recurring";
+    const ref = `${seed.first.slice(0, 4).toUpperCase()}${String(index + 1).padStart(2, "0")}`;
 
-export const DEV_ACTIVITY: ActivityItem[] = [
-  { id: "activity-1", timestamp: "2025-06-13T09:00:00Z", text: "$18.00 collected — Sarah Mitchell" },
-  { id: "activity-2", timestamp: "2025-06-10T08:00:00Z", text: "Payment failed — Aroha Ngata" },
-  { id: "activity-3", timestamp: "2025-06-06T09:00:00Z", text: "$18.00 collected — Sarah Mitchell" },
-  { id: "activity-4", timestamp: "2025-05-10T00:00:00Z", text: "Mia Chen joined on the Weekly Direct Debit plan" },
-  { id: "activity-5", timestamp: "2025-04-02T00:00:00Z", text: "Kahu Ropata joined on the Weekly Direct Debit plan" },
-  { id: "activity-6", timestamp: "2025-02-01T12:00:00Z", text: "$799.00 collected — Liam Taufa" },
-];
+    let nextBilling: string | null = null;
+    if (recurringDebit && seed.status === "active" && seed.lastChargeDaysAgo) {
+      nextBilling = dateOnly(daysFromNow(7 - seed.lastChargeDaysAgo));
+    } else if (seed.awaitingFirstPayment) {
+      nextBilling = dateOnly(daysFromNow(4));
+    }
+
+    members.push({
+      id,
+      gym_id: DEMO_GYM_ID,
+      user_id: null,
+      first_name: seed.first,
+      last_name: seed.last,
+      email: `${seed.first}.${seed.last}`.toLowerCase().replace(/[^a-z.]/g, "") + "@example.com",
+      phone: `+64 21 555 ${String(101 + index * 37).padStart(4, "0")}`,
+      plan_id: plan.id,
+      status: seed.status,
+      stripe_customer_id: null,
+      stripe_subscription_id: null,
+      gc_customer_id: seed.billing === "cash" ? null : `CU00${ref}`,
+      gc_mandate_id: onDirectDebit ? `MD00${ref}` : null,
+      gc_subscription_id: recurringDebit ? `SB00${ref}` : null,
+      invite_token: null,
+      invite_sent_at: null,
+      start_date: dateOnly(joined),
+      next_billing_date: nextBilling,
+      cancellation_requested_at: seed.cancelling ? daysFromNow(-1).toISOString() : null,
+      created_at: joined.toISOString(),
+    });
+
+    // ── Contract ──
+    const contractState = seed.contract ?? "signed";
+    if (contractState !== "none") {
+      const signed = contractState === "signed";
+      contracts.push({
+        id: `con-${index + 1}`,
+        gym_id: DEMO_GYM_ID,
+        member_id: id,
+        template_url: null,
+        // Demo PDFs are generated on request (app/api/demo/contract/[id]);
+        // this only needs to be non-null so the Download button appears.
+        pdf_url: `demo/${id}.pdf`,
+        signed_at: signed ? joined.toISOString() : null,
+        status: signed ? "signed" : "pending",
+        last_sent_at: joined.toISOString(),
+        created_at: joined.toISOString(),
+      });
+    }
+
+    // ── Payment history ──
+    if (seed.awaitingFirstPayment || seed.status === "pending") return;
+
+    if (plan.pricing_model === "paid_in_full") {
+      addPayment({
+        member_id: id,
+        plan_id: plan.id,
+        amount: plan.price,
+        provider: onDirectDebit ? "gocardless" : "manual",
+        type: "one_off",
+        status: "succeeded",
+        note: onDirectDebit ? null : "Bank transfer",
+        paid_at: utcMidnight(joined),
+        created_at: joined.toISOString(),
+      });
+      return;
+    }
+
+    if (seed.lastChargeDaysAgo) {
+      for (let week = 0; week < WEEKS_OF_HISTORY; week++) {
+        const daysAgo = seed.lastChargeDaysAgo + week * 7;
+        if (daysAgo > seed.joinedDaysAgo) break;
+        const chargedOn = daysFromNow(-daysAgo);
+
+        if (week === 0 && seed.failedLatestCharge) {
+          addPayment({
+            member_id: id,
+            plan_id: plan.id,
+            amount: plan.price,
+            provider: "gocardless",
+            type: "recurring",
+            status: "failed",
+            // Reported today: banks take a couple of days to bounce a debit.
+            created_at: daysFromNow(-3 / 24).toISOString(),
+          });
+          continue;
+        }
+
+        addPayment({
+          member_id: id,
+          plan_id: plan.id,
+          amount: plan.price,
+          provider: "gocardless",
+          type: "recurring",
+          status: "succeeded",
+          paid_at: utcMidnight(chargedOn),
+          created_at: daysFromNow(-daysAgo + 1).toISOString(),
+        });
+      }
+      return;
+    }
+
+    // Weekly members with no live debit: a stretch of older manual payments.
+    for (let week = 0; week < 4; week++) {
+      const paidOn = daysFromNow(-(35 + week * 7));
+      addPayment({
+        member_id: id,
+        plan_id: plan.id,
+        amount: plan.price,
+        provider: "manual",
+        type: "one_off",
+        status: "succeeded",
+        note: "Cash",
+        paid_at: utcMidnight(paidOn),
+        created_at: paidOn.toISOString(),
+      });
+    }
+  });
+
+  return { gym, plans: Object.values(plansByKey), members, contracts, payments };
+}

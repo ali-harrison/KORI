@@ -1,74 +1,62 @@
-# Southerly Strength — click-through demo checklist
+# Demo walkthrough
 
-Run `node --env-file=.env.local scripts/seed-demo.mjs` first (see its header
-comment for details). It's safe to re-run any time you want a clean demo
-state back — it always wipes and reseeds Southerly Strength's plans, members, and
-payments.
+About five minutes, in demo mode (see the [README](README.md)). Sample data is dated relative to today, so it's always current. If a run goes sideways, press **Reset demo** in the top banner.
 
-The expected values below assume the seed data is fresh. If you've been
-clicking around and changing things, re-run the seed script to reset before
-checking pass/fail against these numbers.
+Run through it once before presenting. `npm run dev` compiles each page the first time it's opened, so the first visit to a page is slower than the rest.
 
-## 1. Log in
-Go to `/auth/login`, enter `owner@example.com`, click the magic link
-in your email.
-**Correct:** you land on `/dashboard` showing "Southerly Strength" in the header —
-not an empty state, not an onboarding prompt.
+## Starting point
 
-## 2. Dashboard stats
-**Correct — each stat card reads:**
-- Total Members: **10**
-- Active Members: **6**, with retention around **60%**
-- Monthly Revenue: a non-zero dollar figure (from this calendar month's
-  succeeded payments only — a couple of weekly payments plus one 12-month
-  paid-in-full lump sum land in the current month by design)
-- Failed Payments: **1**, marked red / "need attention"
+| | |
+| --- | --- |
+| Members | 22: 13 active, 4 paused, 3 pending, 2 cancelled |
+| Failed payments | 2: Aroha Ngata and Hemi Parata |
+| Plans | Weekly Direct Debit $18/wk, 12-Month Paid in Full $799, 3-Month Paid in Full $249 |
 
-## 3. Members list → member detail → payment history
-Go to **Members**, open **Emma Thompson**.
-**Correct:** status badge "Active", plan "Weekly Direct Debit" at
-**$18/wk**, and a Payments card showing **3** succeeded entries (most
-recent first), each with a note ("Bank transfer").
+The sidebar, Overview, Members and Billing all count from the same rows, so they always agree.
 
-Also open **Grace Wallace**: plan "12-Month Paid in Full" showing
-**$799 upfront (12 mo)**, one succeeded payment in her history.
+## 1. Overview: what needs doing today
 
-## 4. Record a manual payment
-On any active member's page, click **Record payment**, enter an amount and
-date, submit.
-**Correct:** the new entry appears at the top of that member's payment
-history immediately, and the dashboard's Monthly Revenue figure increases
-by that amount if you recorded it with today's date.
+Failed payments are at the top, next to what's due this week and recent activity.
 
-## 5. Add a new member
-From **Members**, click **Add member**, fill in a name/email and assign
-any plan.
-**Correct:** they appear in the members list with status "Pending" and the
-correct plan name/price shown; Total Members on the dashboard increments
-by one.
+## 2. A failed payment, start to finish
 
-## 6. Change a member's status
-Open a member, use the status actions (e.g. Pause an active member).
-**Correct:** the badge updates immediately on their detail page, and the
-change is reflected in the Members list and in Active Members / retention
-% on the dashboard without needing a manual refresh.
+1. Under **Needs attention**, click **Send reminder** next to Aroha. It confirms with **Sent**. The wording comes from the template in Settings.
+2. Click **View** to open Aroha's profile: the failed charge sits on top of their payment history.
+3. Say they've paid cash at the desk. Click **Record payment**, enter `15`, and save. It appears straight away.
+4. Click **Reactivate** to set them back to active.
+5. Back on **Overview**, Aroha has left Needs attention, Failed payments has dropped to 1, and revenue is up $18.
 
-## 7. Needs Attention — the paused/failed member
-Go back to the dashboard.
-**Correct:** the Alerts panel shows **Mitchell Corbett — $18 failed**
-with a recent date, linking through to his member page. His status badge
-there reads "Paused", and his profile shows "Direct debit: Mandate active"
-(a placeholder mandate ID was seeded — no live GoCardless call happens in
-this pass).
+## 3. Sign up a new member
 
-## 8. Every plan shape displays correctly
-Go to **Plans**.
-**Correct — three cards:**
-- "Weekly Direct Debit" — **$18/wk**
-- "12-Month Paid in Full" — **$799 upfront**, with a "12-month term, paid
-  in full" note
-- "3-Month Paid in Full" — **$249 upfront**, with a "3-month term, paid in
-  full" note
+1. In **Members**, click **Add member** and pick a plan. They appear as Pending, and the count in the sidebar goes up.
+2. Open them and click **Set up direct debit**. In production the member goes through GoCardless's hosted bank page here. The demo skips straight to the result: **Pending confirmation**, with a first charge scheduled.
+3. Click **Send contract**, then **Download** to see the PDF generated from the gym's template, with the member's details filled in.
+4. Click **Mark as signed**.
 
-Click **New plan**: the Recurring/Paid-in-full toggle swaps between a
-billing-interval dropdown (weekly/monthly/annual) and a term-length field.
+## 4. Plans
+
+Hover a plan and click **Edit**, or add one with **New plan**. Try **Delete** on Weekly Direct Debit: it refuses, because members are on it.
+
+## 5. Billing
+
+Mandate health across all members, the next two weeks of charges, and recent collection days, including the day that had failures.
+
+## 6. Cancelling
+
+Open any active direct debit member and click **Cancel**. They move to **Cancelling** rather than Cancelled, because the app waits for GoCardless to confirm. Ngahuia Reid already shows that state. In the demo no confirmation arrives, so they stay there until you reset.
+
+## 7. Settings
+
+- **Contract template** and **Overdue payment reminder** preview live as you type.
+- Under **Appearance**, turn **Te reo Māori labels** off and on, or change the accent colour.
+- Change the gym's name and it updates in the sidebar.
+
+## On a phone
+
+Everything works at phone width, with the menu behind the button at the top left. To show it, narrow the browser window or use the device toolbar in your browser's dev tools.
+
+---
+
+## Demoing against a real database
+
+`npm run seed:demo` loads a separate sample set into Supabase for a click-through with real sign-in. **It deletes the gym's existing plans, members, contracts and payments first**, so only run it on a database with nothing worth keeping. Sign in at `/auth/login` with the owner email set in `scripts/seed-demo.mjs`.

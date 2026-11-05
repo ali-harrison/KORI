@@ -1,18 +1,15 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { DEV_BYPASS } from "@/lib/queries";
+import { requireSession, DEV_BYPASS } from "@/lib/queries";
+import * as DEMO from "@/lib/dev-store";
 
 export async function recordPayment(
   memberId: string,
   gymId: string,
   { amount, paidAt, note }: { amount: number; paidAt: string; note?: string }
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   if (!Number.isFinite(amount) || amount <= 0) {
     return { error: "Enter a valid amount" };
@@ -22,7 +19,9 @@ export async function recordPayment(
   }
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — recordPayment(${memberId}, ${amount})`);
+    const result = DEMO.recordPayment(memberId, { amount, paidAt, note: note || null });
+    if (result) return result;
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   }
 
@@ -49,7 +48,6 @@ export async function recordPayment(
 
   if (error) return { error: error.message };
 
-  revalidatePath(`/dashboard/members/${memberId}`);
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }

@@ -181,14 +181,29 @@ async function handleMandateCancelled(event: Event, supabase: AdminClient): Prom
   // redelivery for a mandate this member has since replaced can't clobber
   // their current one — the WHERE simply won't match once gc_mandate_id has
   // moved on, making this naturally safe to reprocess or receive out of order.
+  const cleared = { gc_mandate_id: null, gc_subscription_id: null, cancellation_requested_at: null };
+
+  // The gym cancelled this member (cancellation_requested_at is set), so the
+  // membership is over — that's the confirmation they've been waiting on.
+  const { data: confirmed, error: confirmError } = await supabase
+    .from("members")
+    .update({ ...cleared, status: "cancelled" })
+    .eq("gc_mandate_id", mandateId)
+    .not("cancellation_requested_at", "is", null)
+    .select("id");
+
+  if (confirmError) {
+    console.error("Failed to confirm cancelled GoCardless mandate", mandateId, confirmError);
+    return;
+  }
+  if (confirmed && confirmed.length > 0) return;
+
+  // Otherwise the mandate died on its own (member cancelled at their bank, or
+  // the bank withdrew it). They haven't left, so pause them for the gym to
+  // chase up rather than treating that as a cancelled membership.
   const { data, error } = await supabase
     .from("members")
-    .update({
-      gc_mandate_id: null,
-      gc_subscription_id: null,
-      status: "paused",
-      cancellation_requested_at: null,
-    })
+    .update({ ...cleared, status: "paused" })
     .eq("gc_mandate_id", mandateId)
     .select("id");
 

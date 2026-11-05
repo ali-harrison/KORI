@@ -11,6 +11,12 @@ export async function GET() {
     return NextResponse.redirect(new URL("/auth/login", process.env.NEXT_PUBLIC_APP_URL!));
   }
 
+  // Without this the owner lands on a GoCardless error page about a client_id
+  // of "undefined".
+  if (!process.env.GOCARDLESS_CLIENT_ID || !process.env.GOCARDLESS_CLIENT_SECRET) {
+    return NextResponse.redirect(new URL("/dashboard/settings?gc_error=not_configured", process.env.NEXT_PUBLIC_APP_URL!));
+  }
+
   // State encodes the user ID so the callback can find the right gym
   const state = `${user.id}:${randomBytes(16).toString("hex")}`;
 

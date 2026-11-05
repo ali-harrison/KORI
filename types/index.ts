@@ -13,6 +13,12 @@ export type PaymentStatus = "pending" | "succeeded" | "failed" | "refunded";
 
 // ── Database row types ───────────────────────────────────────────────────────
 
+// A gym row minus anything that must never reach the browser. Anything
+// passed to a Client Component gets serialized into the page payload, so
+// gc_access_token (a live bearer token for the gym's GoCardless account)
+// has to be stripped first — see toClientGym in utils/index.ts.
+export type ClientGym = Omit<Gym, "gc_access_token">;
+
 export interface Gym {
   id: string;
   owner_id: string;
@@ -136,6 +142,9 @@ export interface DashboardStats {
   totalMembers: number;
   activeMembers: number;
   monthlyRevenue: number;
+  // True while the gym has no payment history yet and monthlyRevenue is an
+  // estimate from plan prices rather than money actually collected.
+  revenueIsEstimate: boolean;
   failedPayments: number;
 }
 
@@ -154,7 +163,7 @@ export interface FailedPaymentAlert {
 // Derived display state for a member's direct debit mandate — see
 // getMandateBadgeState in utils/index.ts for the derivation and its
 // documented limits. Not a real GoCardless or DB status column.
-export type MandateBadgeState = "active" | "pending" | "cancelling" | "failed" | "cancelled" | "none";
+export type MandateBadgeState = "active" | "pending" | "cancelling" | "on_hold" | "cancelled" | "none";
 
 // A real, upcoming direct-debit charge, derived from an active recurring
 // member's next_billing_date. Not a GoCardless "batch" — GoCardless doesn't
@@ -183,7 +192,7 @@ export interface MandateSummary {
   active: number;
   pending: number;
   cancelling: number;
-  failed: number;
+  on_hold: number;
   cancelled: number;
   none: number;
   total: number;
@@ -198,39 +207,3 @@ export interface ActivityItem {
   text: string;
 }
 
-// ── Form types ───────────────────────────────────────────────────────────────
-
-export type CreatePlanInput =
-  | {
-      name: string;
-      description?: string;
-      price: number;
-      pricing_model: "recurring";
-      billing_interval: BillingInterval;
-    }
-  | {
-      name: string;
-      description?: string;
-      price: number;
-      pricing_model: "paid_in_full";
-      term_months: number;
-    };
-
-export interface CreateMemberInput {
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone?: string;
-  plan_id: string;
-}
-
-export interface UpdateGymInput {
-  name?: string;
-  address?: string;
-  phone?: string;
-  email?: string;
-  logo_url?: string;
-  contract_template?: string;
-  overdue_email_subject?: string;
-  overdue_email_body?: string;
-}

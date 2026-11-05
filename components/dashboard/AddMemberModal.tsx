@@ -35,7 +35,7 @@ export function AddMemberModal({ open, onClose, gymId, plans }: AddMemberModalPr
 
   const planOptions = [
     { value: "", label: "No plan assigned" },
-    ...plans.map((p) => ({ value: p.id, label: p.name })),
+    ...plans.filter((p) => p.active).map((p) => ({ value: p.id, label: p.name })),
   ];
 
   return (

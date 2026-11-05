@@ -12,7 +12,9 @@ if (process.env.NODE_ENV === "production" && process.env.DEV_BYPASS === "true") 
 }
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Demo mode runs under `next dev`, and the indicator sits on top of the
+  // sidebar's user card. Build and runtime errors still surface without it.
+  devIndicators: false,
 };
 
 export default nextConfig;

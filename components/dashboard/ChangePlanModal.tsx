@@ -14,9 +14,10 @@ interface ChangePlanModalProps {
   gymId: string;
   currentPlanId: string | null;
   plans: Plan[];
+  hasSubscription: boolean;
 }
 
-export function ChangePlanModal({ open, onClose, memberId, gymId, currentPlanId, plans }: ChangePlanModalProps) {
+export function ChangePlanModal({ open, onClose, memberId, gymId, currentPlanId, plans, hasSubscription }: ChangePlanModalProps) {
   const [planId, setPlanId] = useState(currentPlanId ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,7 +36,8 @@ export function ChangePlanModal({ open, onClose, memberId, gymId, currentPlanId,
 
   const planOptions = [
     { value: "", label: "No plan assigned" },
-    ...plans.map((p) => ({ value: p.id, label: p.name })),
+    // Their current plan stays selectable even if it's since been deactivated.
+    ...plans.filter((p) => p.active || p.id === currentPlanId).map((p) => ({ value: p.id, label: p.name })),
   ];
 
   return (
@@ -43,7 +45,11 @@ export function ChangePlanModal({ open, onClose, memberId, gymId, currentPlanId,
       open={open}
       onClose={onClose}
       title="Change plan"
-      description="Update which plan this member is billed on."
+      description={
+        hasSubscription
+          ? "Changes the plan shown here. Their GoCardless subscription keeps collecting the old amount until it's changed in GoCardless."
+          : "Choose which plan this member is on."
+      }
       size="sm"
       footer={
         <>

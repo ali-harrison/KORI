@@ -1,9 +1,7 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase";
-import { redirect } from "next/navigation";
-import { getGym, getFailedPaymentAlerts, DEV_BYPASS } from "@/lib/queries";
-import { sendOverdueReminderEmail } from "@/lib/resend";
+import { getGym, getFailedPaymentAlerts, requireSession, DEV_BYPASS } from "@/lib/queries";
+import { isEmailConfigured, sendOverdueReminderEmail } from "@/lib/resend";
 import { renderTemplate } from "@/lib/templates";
 import { formatCurrency, formatDate } from "@/utils";
 
@@ -16,9 +14,7 @@ export async function sendOverdueReminder(
   memberId: string,
   gymId: string
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  await requireSession();
 
   const [gym, alerts] = await Promise.all([getGym(), getFailedPaymentAlerts(gymId)]);
   const alert = alerts.find((a) => a.memberId === memberId);
@@ -35,11 +31,13 @@ export async function sendOverdueReminder(
   const subject = renderTemplate(gym.overdue_email_subject, tokens);
   const bodyText = renderTemplate(gym.overdue_email_body, tokens);
 
-  // See app/actions/contracts.ts's sendContract for why only the network
-  // call is skipped under DEV_BYPASS.
   if (DEV_BYPASS) {
-    console.log(`[dev] Would send overdue reminder to ${alert.memberEmail}`);
+    console.log(`[demo] Would send overdue reminder to ${alert.memberEmail}`);
     return { success: true };
+  }
+
+  if (!isEmailConfigured()) {
+    return { error: "Email sending isn't set up yet, so this reminder wasn't sent." };
   }
 
   try {

@@ -1,7 +1,9 @@
 import { Document, Page, View, Text, Image, StyleSheet, renderToBuffer } from "@react-pdf/renderer";
+import { renderTemplate } from "@/lib/templates";
+import { formatDate, formatPlanPrice } from "@/utils";
+import type { Gym, MemberWithPlan } from "@/types";
 
-// No "use client" — this only ever runs inside a Server Action
-// (app/actions/contracts.ts), never rendered in the browser.
+// No "use client" — this only ever runs on the server, never in the browser.
 
 const styles = StyleSheet.create({
   page: { padding: 48, fontSize: 11, fontFamily: "Helvetica", color: "#222222" },
@@ -76,6 +78,27 @@ export function ContractDocument({
   );
 }
 
-export async function renderContractPdf(props: ContractDocumentProps): Promise<Buffer> {
-  return renderToBuffer(<ContractDocument {...props} />);
+// Fills the gym's template for one member and renders it to a PDF.
+export async function renderMemberContractPdf(gym: Gym, member: MemberWithPlan): Promise<Buffer> {
+  const memberName = `${member.first_name} ${member.last_name}`;
+  const bodyText = renderTemplate(gym.contract_template, {
+    member_name: memberName,
+    gym_name: gym.name,
+    plan_name: member.plan?.name ?? "—",
+    amount: member.plan ? formatPlanPrice(member.plan) : "—",
+    start_date: formatDate(member.start_date ?? member.created_at),
+  });
+
+  return renderToBuffer(
+    <ContractDocument
+      gymName={gym.name}
+      gymAddress={gym.address}
+      gymPhone={gym.phone}
+      gymEmail={gym.email}
+      logoUrl={gym.logo_url}
+      bodyText={bodyText}
+      memberName={memberName}
+      date={formatDate(new Date())}
+    />
+  );
 }

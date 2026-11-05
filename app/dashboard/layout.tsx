@@ -1,4 +1,4 @@
-import { getGym, getUser, getMemberCount } from "@/lib/queries";
+import { getGym, getUser, getMemberCount, DEV_BYPASS } from "@/lib/queries";
 import { AppShell } from "@/components/dashboard/AppShell";
 
 export default async function DashboardLayout({
@@ -10,7 +10,7 @@ export default async function DashboardLayout({
   const memberCount = await getMemberCount(gym.id);
 
   return (
-    <AppShell gymName={gym.name} memberCount={memberCount} userEmail={user.email}>
+    <AppShell gymName={gym.name} memberCount={memberCount} userEmail={user.email} isDemo={DEV_BYPASS}>
       {children}
     </AppShell>
   );

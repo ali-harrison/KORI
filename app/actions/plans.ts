@@ -1,9 +1,9 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { DEV_BYPASS } from "@/lib/queries";
+import { requireSession, DEV_BYPASS } from "@/lib/queries";
+import * as DEMO from "@/lib/dev-store";
+import type { BillingInterval, Plan } from "@/types";
 
 // Shared parse/validate for the pricing half of the create/edit plan form.
 // Mirrors the plans_pricing_shape_check constraint in the DB: recurring
@@ -11,12 +11,12 @@ import { DEV_BYPASS } from "@/lib/queries";
 // term_months and no billing_interval.
 function parsePricingFields(formData: FormData):
   | { error: string }
-  | { pricing_model: "recurring"; billing_interval: string; term_months: null }
+  | { pricing_model: "recurring"; billing_interval: BillingInterval; term_months: null }
   | { pricing_model: "paid_in_full"; billing_interval: null; term_months: number } {
   const pricing_model = formData.get("pricing_model") as string;
 
   if (pricing_model === "recurring") {
-    const billing_interval = formData.get("billing_interval") as string;
+    const billing_interval = formData.get("billing_interval") as BillingInterval;
     if (!["weekly", "monthly", "annual"].includes(billing_interval)) {
       return { error: "Invalid billing interval" };
     }
@@ -38,9 +38,7 @@ export async function createPlan(
   gymId: string,
   formData: FormData
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   const name = (formData.get("name") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -54,7 +52,8 @@ export async function createPlan(
   if ("error" in pricing) return pricing;
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — createPlan(${gymId}, ${name})`);
+    DEMO.createPlan({ name, description: description || null, price, ...pricing } as Plan);
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   }
 
@@ -70,7 +69,7 @@ export async function createPlan(
 
   if (error) return { error: error.message };
 
-  revalidatePath("/dashboard/plans");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
@@ -79,9 +78,7 @@ export async function updatePlan(
   gymId: string,
   formData: FormData
 ): Promise<{ error: string } | { success: true }> {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase } = await requireSession();
 
   const name = (formData.get("name") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
@@ -95,7 +92,8 @@ export async function updatePlan(
   if ("error" in pricing) return pricing;
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — updatePlan(${planId})`);
+    DEMO.updatePlan(planId, { name, description: description || null, price, ...pricing } as Plan);
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   }
 
@@ -114,17 +112,20 @@ export async function updatePlan(
 
   if (error) return { error: error.message };
 
-  revalidatePath("/dashboard/plans");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
-export async function togglePlanActive(planId: string, gymId: string, active: boolean) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+export async function togglePlanActive(
+  planId: string,
+  gymId: string,
+  active: boolean
+): Promise<{ error: string } | { success: true }> {
+  const { supabase } = await requireSession();
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — togglePlanActive(${planId}, ${active})`);
+    DEMO.setPlanActive(planId, active);
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   }
 
@@ -136,17 +137,17 @@ export async function togglePlanActive(planId: string, gymId: string, active: bo
 
   if (error) return { error: error.message };
 
-  revalidatePath("/dashboard/plans");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
-export async function deletePlan(planId: string, gymId: string) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+export async function deletePlan(planId: string, gymId: string): Promise<{ error: string } | { success: true }> {
+  const { supabase } = await requireSession();
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — deletePlan(${planId})`);
+    const result = DEMO.deletePlan(planId);
+    if (result) return result;
+    revalidatePath("/dashboard", "layout");
     return { success: true };
   }
 
@@ -167,8 +168,15 @@ export async function deletePlan(planId: string, gymId: string) {
     .eq("id", planId)
     .eq("gym_id", gymId);
 
-  if (error) return { error: error.message };
+  if (error) {
+    // members.plan_id has no ON DELETE rule, so a pending or cancelled member
+    // still pointing at this plan blocks the delete at the database.
+    if (error.code === "23503") {
+      return { error: "This plan is still linked to past members — deactivate it instead." };
+    }
+    return { error: error.message };
+  }
 
-  revalidatePath("/dashboard/plans");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }

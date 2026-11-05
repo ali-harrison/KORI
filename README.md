@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# kori/os
 
-## Getting Started
+Gym management for NZ gyms: members, plans, GoCardless direct debit, contracts and overdue reminders. Built for one pilot gym, Southerly Strength in Southport.
 
-First, run the development server:
+**Stack:** Next.js 16 (App Router), TypeScript, Tailwind 4, Supabase (Postgres, Auth, Storage), GoCardless, Resend, `@react-pdf/renderer`. Deployed on Vercel.
+
+## Run the demo
+
+No accounts or credentials needed. Demo mode runs on sample data held in memory.
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. [DEMO.md](DEMO.md) has a five-minute walkthrough.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Everything you click works and persists until the server restarts or you press **Reset demo**. Nothing leaves your machine: no emails, no payments, no database.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Run against real services
 
-## Learn More
+Set `DEV_BYPASS=false` in `.env.local` and fill in the rest of the values, then follow the checklist below.
 
-To learn more about Next.js, take a look at the following resources:
+`DEV_BYPASS` turns off all authentication, so it only works under `next dev`, and `next.config.ts` refuses to build or start production with it on. To run a production build locally while your `.env.local` has it on:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+DEV_BYPASS=false npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Going live
 
-## Deploy on Vercel
+1. **Database.** Link a Supabase project and apply every migration:
+   ```bash
+   npx supabase login
+   ```
+   ```bash
+   npx supabase link --project-ref <ref>
+   ```
+   ```bash
+   npx supabase db push
+   ```
+2. **Auth.** In Supabase, add the deployed URL to Authentication → URL Configuration. Without it, magic links won't redirect back.
+3. **Email.** Verify a sending domain in Resend, then set `RESEND_API_KEY` and `EMAIL_FROM`.
+4. **GoCardless.** Create a sandbox app and set `GOCARDLESS_CLIENT_ID`, `GOCARDLESS_CLIENT_SECRET` and `GOCARDLESS_WEBHOOK_SECRET`. Point its webhook at `/api/webhooks/gocardless`. Connect the gym from Settings, then run one real mandate, payment and cancellation through the sandbox. **This loop has never run against real GoCardless.**
+5. **Go live with money** by setting `GOCARDLESS_ENVIRONMENT=live`. Anything else stays on sandbox.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Every variable also needs to be set in Vercel. Pushing to `main` deploys.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server |
+| `npm test` | Unit tests |
+| `npm run typecheck` | TypeScript check |
+| `npm run seed:demo` | **Wipes** the real gym's plans, members, contracts and payments, then loads sample data |
+
+## Layout
+
+| Path | Contents |
+| --- | --- |
+| `app/dashboard/` | The admin app |
+| `app/actions/` | Server Actions, one file per area |
+| `app/api/` | GoCardless OAuth, billing callback and webhook |
+| `lib/queries.ts` | All reads |
+| `lib/reporting.ts` | Pure aggregation shared by real and demo data |
+| `lib/dev-data.ts`, `lib/dev-store.ts` | Demo mode's sample data and in-memory store |
+| `lib/gocardless-webhook.ts`, `lib/member-cancellation.ts` | Billing logic, kept framework-free so it's unit testable |
+| `supabase/migrations/` | Schema |
+
+[AUDIT.md](AUDIT.md) is the running record of what's been verified, what's known to be missing, and why decisions were made.

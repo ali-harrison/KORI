@@ -1,10 +1,11 @@
 "use server";
 
-import { createServerSupabaseClient, createAdminClient } from "@/lib/supabase";
+import { createAdminClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { slugify } from "@/utils";
-import { DEV_BYPASS } from "@/lib/queries";
+import { requireSession, DEV_BYPASS } from "@/lib/queries";
+import * as DEMO from "@/lib/dev-store";
 
 // Single-tenant pilot decision: KORI runs one gym (Southerly Strength) per
 // deployment for now. Self-serve onboarding is kept in the code (it's the
@@ -12,9 +13,10 @@ import { DEV_BYPASS } from "@/lib/queries";
 // stopped here so a second, unrelated gym can never get created by
 // accident. Reversible — delete this check to reopen onboarding.
 export async function createGym(formData: FormData) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  // The demo gym already exists — nothing to create.
+  if (DEV_BYPASS) redirect("/dashboard");
+
+  const { supabase, user } = await requireSession();
 
   // RLS scopes a normal client's view of `gyms` to rows the caller owns, so
   // this can't see whether some *other* gym already exists — it needs the
@@ -69,45 +71,42 @@ export async function createGym(formData: FormData) {
 }
 
 export async function updateGym(gymId: string, formData: FormData) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase, user } = await requireSession();
+
+  const name = (formData.get("name") as string)?.trim();
+  if (!name) return { error: "Gym name is required" };
+
+  const fields = {
+    name,
+    address: (formData.get("address") as string)?.trim() || null,
+    phone: (formData.get("phone") as string)?.trim() || null,
+    email: (formData.get("email") as string)?.trim() || null,
+    logo_url: (formData.get("logo_url") as string)?.trim() || null,
+  };
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — updateGym(${gymId})`);
-    return { success: true };
+    DEMO.updateGym(fields);
+  } else {
+    const { error } = await supabase.from("gyms").update(fields).eq("id", gymId).eq("owner_id", user.id);
+    if (error) return { error: error.message };
   }
 
-  const { error } = await supabase
-    .from("gyms")
-    .update({
-      name: (formData.get("name") as string).trim(),
-      address: (formData.get("address") as string)?.trim() || null,
-      phone: (formData.get("phone") as string)?.trim() || null,
-      email: (formData.get("email") as string)?.trim() || null,
-      logo_url: (formData.get("logo_url") as string)?.trim() || null,
-    })
-    .eq("id", gymId)
-    .eq("owner_id", user.id);
-
-  if (error) return { error: error.message };
-
-  revalidatePath("/dashboard/settings");
+  // The layout shows the gym name in the sidebar.
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 
 // One reusable template per gym — see lib/templates.ts for the render
 // function and lib/resend.ts for where this gets sent.
 export async function updateContractTemplate(gymId: string, formData: FormData) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase, user } = await requireSession();
 
   const contractTemplate = (formData.get("contract_template") as string)?.trim();
   if (!contractTemplate) return { error: "Contract template can't be empty" };
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — updateContractTemplate(${gymId})`);
+    DEMO.updateGym({ contract_template: contractTemplate });
+    revalidatePath("/dashboard/settings");
     return { success: true };
   }
 
@@ -124,9 +123,7 @@ export async function updateContractTemplate(gymId: string, formData: FormData) 
 }
 
 export async function updateReminderTemplate(gymId: string, formData: FormData) {
-  const supabase = await createServerSupabaseClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  const { supabase, user } = await requireSession();
 
   const overdueEmailSubject = (formData.get("overdue_email_subject") as string)?.trim();
   const overdueEmailBody = (formData.get("overdue_email_body") as string)?.trim();
@@ -135,7 +132,8 @@ export async function updateReminderTemplate(gymId: string, formData: FormData) 
   }
 
   if (DEV_BYPASS) {
-    console.log(`[dev] Skipping write — updateReminderTemplate(${gymId})`);
+    DEMO.updateGym({ overdue_email_subject: overdueEmailSubject, overdue_email_body: overdueEmailBody });
+    revalidatePath("/dashboard/settings");
     return { success: true };
   }
 

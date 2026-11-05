@@ -51,13 +51,9 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
     return <Badge variant={MANDATE_STATE_VARIANT.cancelling} dot>{MANDATE_STATE_LABEL.cancelling}</Badge>;
   }
 
-  if (currentStatus === "cancelled" || currentStatus === "expired") {
-    return (
-      <Button variant="secondary" size="sm" onClick={() => setShowConfirm("activate")}>
-        Reactivate
-      </Button>
-    );
-  }
+  const hasLiveMandate = mandateState === "active" || mandateState === "pending" || mandateState === "on_hold";
+  const membershipOver = currentStatus === "cancelled" || currentStatus === "expired";
+  const isPendingMember = currentStatus === "pending";
 
   return (
     <>
@@ -67,22 +63,35 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
             Pause
           </Button>
         )}
-        {currentStatus === "paused" && (
+        {isPendingMember && (
+          <Button variant="secondary" size="sm" onClick={() => setShowConfirm("activate")}>
+            Activate
+          </Button>
+        )}
+        {(currentStatus === "paused" || membershipOver) && (
           <Button variant="secondary" size="sm" onClick={() => setShowConfirm("activate")}>
             Reactivate
           </Button>
         )}
-        <Button variant="danger" size="sm" onClick={() => setShowConfirm("cancel")}>
-          Cancel
-        </Button>
+        {!membershipOver && (
+          <Button variant="danger" size="sm" onClick={() => setShowConfirm("cancel")}>
+            Cancel
+          </Button>
+        )}
       </div>
 
+      {/* Pausing only changes our own status — it doesn't touch GoCardless, so
+          this must never promise that charges stop. */}
       <ConfirmModal
         open={showConfirm === "pause"}
         onClose={closeConfirm}
         onConfirm={handleConfirm}
         title="Pause membership?"
-        description="The member's access will be suspended until reactivated. No further charges while paused."
+        description={
+          hasLiveMandate
+            ? "Marks them as paused here, but their GoCardless direct debit keeps collecting. To stop payments, cancel the membership or pause the subscription in GoCardless."
+            : "Marks the membership as paused until you reactivate it."
+        }
         confirmLabel="Pause membership"
         loading={isPending}
         variant="primary"
@@ -93,7 +102,11 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
         onClose={closeConfirm}
         onConfirm={handleConfirm}
         title="Cancel membership?"
-        description="This cancels the member's GoCardless subscription and mandate — they will not be charged again. This action cannot be easily undone."
+        description={
+          hasLiveMandate
+            ? "This cancels the member's GoCardless subscription and mandate — they will not be charged again. This action cannot be easily undone."
+            : "Marks the membership as cancelled. They're not on direct debit, so there's nothing to stop."
+        }
         confirmLabel="Cancel membership"
         loading={isPending}
         variant="danger"
@@ -103,9 +116,15 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
         open={showConfirm === "activate"}
         onClose={closeConfirm}
         onConfirm={handleConfirm}
-        title="Reactivate membership?"
-        description="This sets the member's status back to active but does not restore billing. If they don't already have a live GoCardless mandate, send them a new billing request separately."
-        confirmLabel="Reactivate"
+        title={isPendingMember ? "Activate membership?" : "Reactivate membership?"}
+        description={
+          isPendingMember
+            ? "Marks the membership as active — use this for members paying by cash or bank transfer. Direct debit members activate on their own when their first payment confirms."
+            : hasLiveMandate
+              ? "Sets the member back to active. Their existing direct debit carries on as normal."
+              : "Sets the member back to active but doesn't restore billing. Set up a new direct debit from their Membership card, or record payments manually."
+        }
+        confirmLabel={isPendingMember ? "Activate" : "Reactivate"}
         loading={isPending}
         variant="primary"
         error={error}

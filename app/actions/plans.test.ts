@@ -28,7 +28,10 @@ function formData(fields: Record<string, string>) {
 
 // Minimal fake covering exactly the query shapes createPlan/updatePlan/
 // deletePlan use: plans insert/update/delete, members count-select.
-function createFakeSupabase(opts: { activeOrPausedMemberCount?: number; writeError?: { message: string } | null }) {
+function createFakeSupabase(opts: {
+  activeOrPausedMemberCount?: number;
+  writeError?: { code?: string; message: string } | null;
+}) {
   const { activeOrPausedMemberCount = 0, writeError = null } = opts;
   const writes: Array<{ op: string; values?: Record<string, unknown> }> = [];
 
@@ -158,5 +161,17 @@ describe("deletePlan", () => {
     const result = await deletePlan("plan-1", "gym-1");
     expect(result).toEqual({ success: true });
     expect(writes).toEqual([{ op: "delete" }]);
+  });
+
+  // members.plan_id has no ON DELETE rule, so a cancelled or pending member
+  // still blocks the delete at the database even though the count above
+  // only looks at active/paused members.
+  it("translates a foreign-key refusal into something an owner can act on", async () => {
+    const { client } = createFakeSupabase({
+      writeError: { code: "23503", message: 'update or delete on table "plans" violates foreign key constraint' },
+    });
+    mockClient(client);
+    const result = await deletePlan("plan-1", "gym-1");
+    expect(result).toEqual({ error: "This plan is still linked to past members — deactivate it instead." });
   });
 });

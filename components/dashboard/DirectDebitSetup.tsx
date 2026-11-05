@@ -39,20 +39,29 @@ export function DirectDebitSetup({ memberId, hasMandate }: Props) {
   function handleClick() {
     setNotice(null);
     startTransition(async () => {
-      // A successful call ends in redirect() to GoCardless and never
-      // returns to this line — reaching here at all means it failed.
+      // A real success ends in redirect() to GoCardless and never returns
+      // here; only an error, or demo mode, gets this far.
       const result = await startBillingForMember(memberId);
-      setNotice({ type: "error", message: result.error });
+      setNotice(
+        "error" in result
+          ? { type: "error", message: result.error }
+          : { type: "success", message: "Direct debit set up successfully." }
+      );
     });
   }
 
-  if (hasMandate) return null;
+  // Outcomes from GoCardless land after the mandate exists, so the notice has
+  // to survive past hasMandate turning true — "the subscription failed" is
+  // exactly the message that arrives alongside a live mandate.
+  if (hasMandate && !notice) return null;
 
   return (
     <div className="mt-3 space-y-2">
-      <Button variant="ghost" size="sm" className="w-full" onClick={handleClick} loading={isPending}>
-        Set up direct debit
-      </Button>
+      {!hasMandate && (
+        <Button variant="ghost" size="sm" className="w-full" onClick={handleClick} loading={isPending}>
+          Set up direct debit
+        </Button>
+      )}
       {notice && (
         <p className={`text-xs ${notice.type === "success" ? "text-[#5fc9a4]" : "text-[#cf9a90]"}`}>
           {notice.message}

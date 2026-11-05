@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Button, Card, CardTitle, PaymentChip, EmptyState, SlideOver, Bilingual } from "@/components/ui";
 import { Input } from "@/components/ui/Input";
 import { recordPayment } from "@/app/actions/payments";
-import { formatCurrency, formatDate } from "@/utils";
+import { formatCurrency, formatDate, toLocalISODate } from "@/utils";
 import type { Payment } from "@/types";
 import type { PaymentChipVariant } from "@/components/ui";
 
@@ -28,10 +28,6 @@ function paymentDisplay(payment: Payment): { label: string; variant: PaymentChip
     case "refunded":
       return { label: "Refunded", variant: "manual" };
   }
-}
-
-function todayISO(): string {
-  return new Date().toISOString().split("T")[0];
 }
 
 export function PaymentsCard({ memberId, gymId, payments }: Props) {
@@ -68,7 +64,7 @@ export function PaymentsCard({ memberId, gymId, payments }: Props) {
 
   return (
     <Card padding="none">
-      <div className="px-5 pt-5 pb-4 border-b border-[#1f2420] flex items-center justify-between">
+      <div className="px-5 pt-5 pb-4 border-b border-[#1f2420] flex items-center justify-between gap-3">
         <CardTitle description="Billing history">Payments</CardTitle>
         <Button variant="secondary" size="sm" onClick={() => setShowForm(true)}>
           <Bilingual reo="Tāpirihia he utu" en="Record payment" />
@@ -128,7 +124,7 @@ export function PaymentsCard({ memberId, gymId, payments }: Props) {
             required
             autoFocus
           />
-          <Input label="Date paid" name="paid_at" type="date" defaultValue={todayISO()} required />
+          <Input label="Date paid" name="paid_at" type="date" defaultValue={toLocalISODate()} required />
           <Input label="Note (optional)" name="note" placeholder="Cash, bank transfer ref #123" />
           {error && <p className="text-xs text-[#cf9a90]">{error}</p>}
         </form>

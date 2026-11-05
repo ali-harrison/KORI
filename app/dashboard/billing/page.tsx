@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   getGym,
   getUpcomingCharges,
@@ -10,14 +11,16 @@ import { NeedsAttentionCard } from "@/components/dashboard/NeedsAttentionCard";
 import { formatCurrency, formatDate } from "@/utils";
 import type { SubmissionDaySummary } from "@/types";
 
+export const metadata: Metadata = { title: "Billing" };
+
 const SUBMISSION_STATUS: Record<SubmissionDaySummary["status"], { label: string; variant: "success" | "warning" | "danger" }> = {
   clear: { label: "All succeeded", variant: "success" },
   partial_failures: { label: "Some failed", variant: "warning" },
   all_failed: { label: "All failed", variant: "danger" },
 };
 
-const CHARGES_GRID = "2fr 1.6fr 1fr 1fr";
-const SUBMISSIONS_GRID = "1.2fr 0.9fr 1fr 0.9fr 1.4fr";
+const CHARGES_GRID = "minmax(0,2fr) minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)";
+const SUBMISSIONS_GRID = "minmax(0,1.2fr) minmax(0,0.9fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.4fr)";
 
 export default async function BillingPage() {
   const gym = await getGym();
@@ -43,7 +46,7 @@ export default async function BillingPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-[1fr_1.4fr] gap-3 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-3 items-start">
         <Card>
           <CardTitle description="By member, all time">Mandate status</CardTitle>
           <MandateBar summary={mandateSummary} />
@@ -59,9 +62,13 @@ export default async function BillingPage() {
             <EmptyState title={{ en: "No charges due in the next 14 days" }} />
           </div>
         ) : (
-          <DataTable gridTemplateColumns={CHARGES_GRID} headers={["Member", "Plan", "Amount", "Charge date"]}>
+          <DataTable gridTemplateColumns={CHARGES_GRID} minWidth={520} headers={["Member", "Plan", "Amount", "Charge date"]}>
             {upcomingCharges.map((charge) => (
-              <DataTableRow key={`${charge.memberId}-${charge.chargeDate}`} gridTemplateColumns={CHARGES_GRID}>
+              <DataTableRow
+                key={`${charge.memberId}-${charge.chargeDate}`}
+                gridTemplateColumns={CHARGES_GRID}
+                href={`/dashboard/members/${charge.memberId}`}
+              >
                 <div className="text-[13px] font-medium truncate">{charge.memberName}</div>
                 <div className="text-[13px] text-[#b9c0ba] truncate">{charge.planName}</div>
                 <div className="text-[13px] tabular-nums">{formatCurrency(charge.amount)}</div>
@@ -86,6 +93,7 @@ export default async function BillingPage() {
         ) : (
           <DataTable
             gridTemplateColumns={SUBMISSIONS_GRID}
+            minWidth={560}
             headers={["Date", "Charges", "Succeeded", "Failed", "Status"]}
           >
             {recentSubmissions.map((day) => {

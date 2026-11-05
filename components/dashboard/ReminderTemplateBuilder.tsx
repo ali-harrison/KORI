@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, Button } from "@/components/ui";
 import { Input, Textarea } from "@/components/ui/Input";
 import { updateReminderTemplate } from "@/app/actions/gym";
 import { renderTemplate } from "@/lib/templates";
-import type { Gym } from "@/types";
+import type { ClientGym } from "@/types";
 
 // Sample data for the live preview only — real token substitution always
 // happens server-side at actual send time (app/actions/reminders.ts).
@@ -16,7 +16,7 @@ const SAMPLE_TOKENS = {
 };
 
 interface Props {
-  gym: Gym;
+  gym: ClientGym;
 }
 
 export function ReminderTemplateBuilder({ gym }: Props) {
@@ -62,7 +62,7 @@ export function ReminderTemplateBuilder({ gym }: Props) {
           </span>
         )}
       </CardHeader>
-      <div className="grid grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
             label="Subject"
@@ -75,7 +75,7 @@ export function ReminderTemplateBuilder({ gym }: Props) {
             name="overdue_email_body"
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            rows={9}
+            rows={12}
             hint="Available: {{member_name}}, {{gym_name}}, {{amount}}, {{failed_date}}"
           />
           {error && <p className="text-xs text-[#cf9a90]">{error}</p>}
@@ -94,7 +94,7 @@ export function ReminderTemplateBuilder({ gym }: Props) {
 // Light-background DOM mimic of lib/resend.ts's renderEmailShell — same
 // structure (logo/name header, rendered body, footer line), styled to
 // read as "this is the email," not another dashboard panel.
-function ReminderEmailPreview({ gym, subject, bodyText }: { gym: Gym; subject: string; bodyText: string }) {
+function ReminderEmailPreview({ gym, subject, bodyText }: { gym: ClientGym; subject: string; bodyText: string }) {
   const paragraphs = bodyText.split(/\n{2,}/);
 
   return (
@@ -107,7 +107,7 @@ function ReminderEmailPreview({ gym, subject, bodyText }: { gym: Gym; subject: s
       <div className="text-[10px] text-[#999] mb-1 uppercase tracking-wide">Subject</div>
       <div className="text-[13px] font-medium mb-4">{subject}</div>
       {paragraphs.map((p, i) => (
-        <p key={i} className="mb-2.5">{p}</p>
+        <p key={i} className="mb-2.5 whitespace-pre-line">{p}</p>
       ))}
       <p className="text-[9px] text-[#999] mt-6">Sent by {gym.name} via kori/os.</p>
     </div>

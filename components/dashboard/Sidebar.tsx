@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/utils";
-import { PuhoroMotif } from "@/components/ui";
+import { PuhoroMotif, Wordmark } from "@/components/ui";
 import { useThemeSettings } from "@/components/providers/ThemeSettingsProvider";
+import { signOut } from "@/app/actions/auth";
 
 interface NavItem {
   href: string;
@@ -86,9 +87,12 @@ interface SidebarProps {
   gymName?: string;
   memberCount?: number;
   userEmail?: string;
+  isDemo?: boolean;
+  className?: string;
+  onNavigate?: () => void;
 }
 
-export function Sidebar({ gymName = "Southerly Strength", memberCount, userEmail }: SidebarProps) {
+export function Sidebar({ gymName = "Southerly Strength", memberCount, userEmail, isDemo, className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { bilingual, motif } = useThemeSettings();
 
@@ -100,16 +104,14 @@ export function Sidebar({ gymName = "Southerly Strength", memberCount, userEmail
   const initials = userEmail ? userEmail.slice(0, 2).toUpperCase() : "?";
 
   return (
-    <aside className="flex flex-col w-[228px] flex-shrink-0 h-full bg-[#0b0d0c] border-r border-[#1b201c] px-3 py-5">
+    <aside className={cn("flex-col w-[228px] flex-shrink-0 h-full bg-[#0b0d0c] border-r border-[#1b201c] px-3 py-5", className)}>
       {/* Brand */}
       <div className="px-2">
-        <div className="text-base font-medium tracking-tight">
-          kori<span className="text-[var(--accent)]">/os</span>
-        </div>
+        <Wordmark />
         <div className="text-[11px] text-[#59615b] mt-0.5">gym operations</div>
       </div>
 
-      {/* Gym switcher — single-tenant, nothing to switch to. Visual only. */}
+      {/* Current gym */}
       <div className="mt-5 flex items-center gap-2.5 px-2.5 py-2 border border-[#1f2420] rounded-[9px]">
         <div className="w-[26px] h-[26px] rounded-[7px] bg-[#151a16] border border-[#232823] text-[var(--accent)] text-xs font-medium flex items-center justify-center flex-shrink-0">
           {gymName[0]?.toUpperCase() ?? "P"}
@@ -117,12 +119,9 @@ export function Sidebar({ gymName = "Southerly Strength", memberCount, userEmail
         <div className="min-w-0 flex-1">
           <div className="text-xs font-medium text-[#e7eae8] truncate">{gymName}</div>
           <div className="text-[11px] text-[#646c66] truncate">
-            {memberCount !== undefined ? `${memberCount} mema` : " "}
+            {memberCount !== undefined ? `${memberCount} ${bilingual ? "mema" : "members"}` : " "}
           </div>
         </div>
-        <svg width="12" height="12" viewBox="0 0 12 12" className="flex-shrink-0">
-          <path d="M3 4.5 6 7.5 9 4.5" stroke="#646c66" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
       </div>
 
       {/* Nav */}
@@ -135,6 +134,7 @@ export function Sidebar({ gymName = "Southerly Strength", memberCount, userEmail
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onNavigate}
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-[8px] text-[13px]",
                     "transition-colors duration-150",
@@ -166,12 +166,27 @@ export function Sidebar({ gymName = "Southerly Strength", memberCount, userEmail
         <div className="w-7 h-7 rounded-full bg-[#151a16] border border-[#232823] text-[#99a19b] text-[11px] flex items-center justify-center flex-shrink-0">
           {initials}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-xs font-medium truncate">{userEmail ?? "—"}</div>
           <div className="text-[11px] text-[#646c66]">
             {bilingual ? "Kaiwhakahaere · owner" : "Owner"}
           </div>
         </div>
+        {/* No session to end in demo mode. */}
+        {!isDemo && (
+          <form action={signOut}>
+            <button
+              type="submit"
+              aria-label="Sign out"
+              title="Sign out"
+              className="w-7 h-7 flex items-center justify-center rounded-[7px] text-[#646c66] hover:text-[#e7eae8] hover:bg-[#151a16] transition-colors duration-150"
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M6 2.5H4a1.5 1.5 0 00-1.5 1.5v8A1.5 1.5 0 004 13.5h2M10.5 11 13.5 8l-3-3M13.5 8H6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </form>
+        )}
       </div>
     </aside>
   );

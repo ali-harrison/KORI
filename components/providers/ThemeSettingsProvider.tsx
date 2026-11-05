@@ -49,18 +49,26 @@ export function ThemeSettingsProvider({ children }: { children: React.ReactNode 
     // (globals.css), since server-rendered pages can't read this context.
     document.documentElement.dataset.bilingual = String(settings.bilingual);
     document.documentElement.dataset.motif = String(settings.motif);
+  }, [settings]);
+
+  // Saved here, on an actual change, and never from an effect: an effect also
+  // runs on mount, while settings still holds the defaults, and would overwrite
+  // the viewer's saved choice before it had been read back.
+  function update(changes: Partial<ThemeSettings>) {
+    const next = { ...settings, ...changes };
+    setSettings(next);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
       // Storage full/unavailable — theme still works for this session.
     }
-  }, [settings]);
+  }
 
   const value: ThemeSettingsContextValue = {
     ...settings,
-    setAccent: (accent) => setSettings((prev) => ({ ...prev, accent })),
-    setBilingual: (bilingual) => setSettings((prev) => ({ ...prev, bilingual })),
-    setMotif: (motif) => setSettings((prev) => ({ ...prev, motif })),
+    setAccent: (accent) => update({ accent }),
+    setBilingual: (bilingual) => update({ bilingual }),
+    setMotif: (motif) => update({ motif }),
   };
 
   return <ThemeSettingsContext.Provider value={value}>{children}</ThemeSettingsContext.Provider>;

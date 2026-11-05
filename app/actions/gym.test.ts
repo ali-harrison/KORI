@@ -120,6 +120,16 @@ describe("createGym", () => {
 });
 
 describe("updateGym", () => {
+  it("rejects a blank gym name rather than saving an empty one", async () => {
+    vi.mocked(createServerSupabaseClient).mockResolvedValue({
+      auth: { getUser: async () => ({ data: { user: authedUser } }) },
+    } as never);
+
+    const result = await updateGym("gym-1", formData({ name: "   " }));
+
+    expect(result).toEqual({ error: "Gym name is required" });
+  });
+
   it("trims fields and nulls out blanks", async () => {
     const updates: Array<Record<string, unknown>> = [];
     vi.mocked(createServerSupabaseClient).mockResolvedValue({
