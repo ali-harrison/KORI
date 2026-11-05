@@ -2,6 +2,8 @@
 
 Gym management for NZ gyms: members, plans, GoCardless direct debit, contracts and overdue reminders.
 
+**[Try the live demo →](https://kori-demo.vercel.app)** No sign-up. Everything works, with sample data for a made-up gym.
+
 ## What it does
 
 - **Overview** of what needs doing today: failed payments, charges due this week, recent activity
