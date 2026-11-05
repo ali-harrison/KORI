@@ -14,17 +14,24 @@ Running it locally, go through it once before presenting: `npm run dev` compiles
 
 The sidebar, Overview, Members and Billing all count from the same rows, so they always agree.
 
-## 1. Overview: what needs doing today
+## 1. Overview: the state of the gym in a sentence
 
-Failed payments are at the top, next to what's due this week and recent activity.
+The headline says what needs you and how the month is going. Kōkōwai only ever marks what needs attention, so the eye goes straight to it.
 
-## 2. A failed payment, start to finish
+The chart steps up on charge days, this month against last. Hover it, or focus it and use the arrow keys, to read any day.
+
+**Every number shows its working.** Click **Collected this month**: it opens the payments behind that figure, with a total that matches, and **Export CSV** adds up to the same amount.
+
+## 2. A failed payment, without leaving the page
 
 1. Under **Needs attention**, click **Send reminder** next to Aroha. It confirms with **Sent**. The wording comes from the template in Settings.
-2. Click **View** to open Aroha's profile: the failed charge sits on top of their payment history.
-3. Say they've paid cash at the desk. Click **Record payment**, enter `18`, and save. It appears straight away.
-4. Click **Reactivate** to set them back to active.
-5. Back on **Overview**, Aroha has left Needs attention, Failed payments has dropped to 1, and revenue is up $18.
+2. Say they've paid cash at the desk. Click **Record payment** on the same row. The amount is already filled in, so just save.
+3. Aroha leaves the list, the headline drops to 1 payment, and revenue goes up by $18.
+4. Open Aroha's profile, the payment is in their history. Click **Reactivate** to set them back to active.
+
+## Finding anyone, fast
+
+Press `⌘K` (`Ctrl K` on Windows) from any screen, type a few letters of a name, and press Enter.
 
 ## 3. Sign up a new member
 
@@ -39,7 +46,7 @@ Hover a plan and click **Edit**, or add one with **New plan**. Try **Delete** on
 
 ## 5. Billing
 
-Mandate health across all members, the next two weeks of charges, and recent collection days, including the day that had failures.
+Direct debit status across all members, the next two weeks of charges, every payment collected this month, and recent collection days.
 
 ## 6. Cancelling
 
@@ -48,7 +55,7 @@ Open any active direct debit member and click **Cancel**. They move to **Cancell
 ## 7. Settings
 
 - **Contract template** and **Overdue payment reminder** preview live as you type.
-- Under **Appearance**, turn **Te reo Māori labels** off and on, or change the accent colour.
+- Under **Appearance**, switch between dark and light, and turn **Te reo Māori labels** and the **Poutama pattern** off and on.
 - Change the gym's name and it updates in the sidebar.
 
 ## On a phone
