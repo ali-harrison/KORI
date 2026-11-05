@@ -30,23 +30,23 @@ export default function GlobalError({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0b0d0c",
-          color: "#e7eae8",
+          background: "#0e0d0b",
+          color: "#ece7df",
           fontFamily: "-apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
         }}
       >
         <div style={{ textAlign: "center", padding: 24 }}>
           <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 6 }}>Something went wrong</p>
-          <p style={{ fontSize: 13, color: "#8f978f", marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: "#8f897f", marginBottom: 20 }}>
             Unexpected error loading the app. Try again, or reload the page.
           </p>
           <button
             onClick={reset}
             style={{
-              background: "#151a16",
-              color: "#e7eae8",
-              border: "1px solid #262b27",
-              borderRadius: 7,
+              background: "#161411",
+              color: "#ece7df",
+              border: "1px solid #4a4640",
+              borderRadius: 2,
               padding: "7px 14px",
               fontSize: 13,
               cursor: "pointer",

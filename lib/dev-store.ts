@@ -1,9 +1,9 @@
 import type {
-  ActivityItem, Contract, ContractWithMember, DashboardStats, FailedPaymentAlert, Gym, MandateSummary, Member,
-  MemberStatus, MemberWithPlan, Payment, Plan, SubmissionDaySummary, UpcomingCharge,
+  ActivityItem, CollectedPayment, Contract, ContractWithMember, DashboardStats, FailedPaymentAlert, Gym, MandateSummary,
+  Member, MemberStatus, MemberWithPlan, Payment, Plan, RevenueSeries, SubmissionDaySummary, UpcomingCharge,
 } from "@/types";
 import { DEMO_GYM_ID, type DemoState } from "./dev-data";
-import { buildActivity, currentMonthRange, filterOpenFailures, summarizeMandates, summarizeSubmissions } from "./reporting";
+import { buildActivity, buildRevenueSeries, currentMonthRange, filterOpenFailures, summarizeMandates, summarizeSubmissions } from "./reporting";
 import { toLocalISODate } from "@/utils";
 
 // Demo mode's stand-in for Supabase. Reads mirror lib/queries.ts and writes
@@ -109,6 +109,29 @@ export function getDashboardStats(state: DemoState): DashboardStats {
     revenueIsEstimate: false,
     failedPayments: getFailedPaymentAlerts(state).length,
   };
+}
+
+export function getRevenueSeries(state: DemoState): RevenueSeries {
+  return buildRevenueSeries(state.payments.filter((payment) => payment.status === "succeeded"));
+}
+
+export function getCollectedThisMonth(state: DemoState): CollectedPayment[] {
+  const { start, end } = currentMonthRange();
+  return state.payments
+    .filter((p) => p.status === "succeeded" && p.paid_at && p.paid_at >= start && p.paid_at < end)
+    .sort((a, b) => b.paid_at!.localeCompare(a.paid_at!))
+    .map((payment) => {
+      const member = findMember(state, payment.member_id);
+      return {
+        id: payment.id,
+        memberId: member?.id ?? null,
+        memberName: member ? `${member.first_name} ${member.last_name}` : "Unknown member",
+        amount: payment.amount,
+        paidAt: payment.paid_at!,
+        provider: payment.provider,
+        note: payment.note,
+      };
+    });
 }
 
 export function getUpcomingCharges(state: DemoState, daysAhead: number): UpcomingCharge[] {

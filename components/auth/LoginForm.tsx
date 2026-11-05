@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Wordmark } from "@/components/ui/Wordmark";
+import { Button, Input, Poutama, Wordmark } from "@/components/ui";
 import { createClient } from "@/lib/supabase-client";
 
 const UNREACHABLE = "We can't reach the sign-in service right now. Try again in a moment.";
@@ -45,66 +43,63 @@ export function LoginForm({ initialError }: { initialError: string | null }) {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0b0d0c] flex items-center justify-center p-6">
-      <div className="w-full max-w-sm">
-        <div className="mb-10">
-          <Wordmark />
-          <div className="text-[11px] text-[#59615b] mt-0.5">gym operations</div>
+    <main className="min-h-dvh grid lg:grid-cols-2">
+      <div className="hidden lg:flex flex-col justify-between border-r border-line p-10">
+        <Wordmark />
+        <div>
+          <Poutama width={480} height={72} spacing={36} step={9} className="mb-8" />
+          <p className="text-[clamp(2rem,3.4vw,3rem)] leading-[1.06] tracking-[-0.03em] max-w-md text-balance">
+            Members, direct debit and contracts, on one ledger.
+          </p>
         </div>
-
-        {!sent ? (
-          <div className="space-y-6">
-            <div className="space-y-1">
-              <h1 className="text-xl font-medium text-[#e7eae8]">Sign in</h1>
-              <p className="text-sm text-[#8f978f]">
-                Enter your email to receive a magic link.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Email address"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-              />
-              {error && <p className="text-xs text-[#cf7263]">{error}</p>}
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full"
-                type="submit"
-                loading={loading}
-              >
-                Continue with email
-              </Button>
-            </form>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="w-10 h-10 rounded-full bg-[rgba(95,201,164,0.1)] border border-[rgba(95,201,164,0.2)] flex items-center justify-center">
-              <svg width="18" height="18" viewBox="0 0 16 16" fill="none" className="text-[#5fc9a4]">
-                <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
-            <div className="space-y-1">
-              <h2 className="text-base font-medium text-[#e7eae8]">Check your email</h2>
-              <p className="text-sm text-[#8f978f]">
-                We sent a magic link to <span className="text-[#e7eae8]">{email}</span>
-              </p>
-            </div>
-            <button
-              onClick={() => { setSent(false); setError(null); }}
-              className="text-xs text-[#646c66] hover:text-[#8f978f] transition-colors"
-            >
-              Use a different email
-            </button>
-          </div>
-        )}
+        <a href="https://tewairama.digital" target="_blank" rel="noopener" className="label hover:text-fg transition-colors duration-150 w-fit">
+          Te Wairama Digital <span aria-hidden>↗</span>
+        </a>
       </div>
-    </div>
+
+      <div className="flex items-center justify-center p-6">
+        <div className="w-full max-w-sm">
+          <Wordmark className="lg:hidden block mb-10" />
+
+          {!sent ? (
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <h1 className="text-3xl tracking-[-0.03em]">Sign in</h1>
+                <p className="text-fg-2">Enter your email to receive a magic link.</p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  label="Email address"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
+                {error && <p role="alert" className="text-accent text-[13px]">{error}</p>}
+                <Button variant="primary" size="lg" className="w-full" type="submit" loading={loading}>
+                  Continue with email
+                </Button>
+              </form>
+            </div>
+          ) : (
+            <div className="space-y-3" role="status">
+              <h1 className="text-3xl tracking-[-0.03em]">Check your email</h1>
+              <p className="text-fg-2">
+                We sent a magic link to <span className="text-fg">{email}</span>
+              </p>
+              <button
+                onClick={() => { setSent(false); setError(null); }}
+                className="label hover:text-fg transition-colors duration-150 cursor-pointer"
+              >
+                Use a different email
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
   );
 }

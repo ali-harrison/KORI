@@ -82,13 +82,13 @@ export function ContractActions({ contract, memberId, gymId, layout = "row" }: P
           </>
         )}
         {contract?.pdf_url && (
-          <Button variant="ghost" size="sm" className={buttonClassName} onClick={handleDownload} loading={isDownloading}>
+          <Button variant={layout === "stack" ? "secondary" : "ghost"} size="sm" className={buttonClassName} onClick={handleDownload} loading={isDownloading}>
             Download
           </Button>
         )}
       </div>
       {notice && (
-        <p className={`${noticeClassName} ${notice.type === "success" ? "text-[#5fc9a4]" : "text-[#cf9a90]"}`}>
+        <p role="status" className={`${noticeClassName} ${notice.type === "success" ? "text-ok" : "text-accent"}`}>
           {notice.message}
         </p>
       )}

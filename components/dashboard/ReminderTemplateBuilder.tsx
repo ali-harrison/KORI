@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, CardHeader, CardTitle, Button } from "@/components/ui";
-import { Input, Textarea } from "@/components/ui/Input";
+import { Button, Input, Textarea } from "@/components/ui";
+import { SavedNote, SettingsSection } from "@/components/dashboard/SettingsSection";
 import { updateReminderTemplate } from "@/app/actions/gym";
 import { renderTemplate } from "@/lib/templates";
 import type { ClientGym } from "@/types";
@@ -48,28 +48,14 @@ export function ReminderTemplateBuilder({ gym }: Props) {
   const previewBody = renderTemplate(body, tokens);
 
   return (
-    <Card>
-      <CardHeader className="pb-5 mb-5">
-        <CardTitle description="Sent when you send a reminder to a member with a failed payment">
-          Overdue payment reminder
-        </CardTitle>
-        {saved && (
-          <span className="text-xs text-[#5fc9a4] flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Saved
-          </span>
-        )}
-      </CardHeader>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <Input
-            label="Subject"
-            name="overdue_email_subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-          />
+    <SettingsSection
+      title="Overdue reminder"
+      description="Sent when you remind a member about a failed payment."
+      status={saved ? <SavedNote /> : undefined}
+    >
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <form onSubmit={handleSubmit} className="space-y-3 min-w-0">
+          <Input label="Subject" name="overdue_email_subject" value={subject} onChange={(e) => setSubject(e.target.value)} />
           <Textarea
             label="Body"
             name="overdue_email_body"
@@ -78,16 +64,12 @@ export function ReminderTemplateBuilder({ gym }: Props) {
             rows={12}
             hint="Available: {{member_name}}, {{gym_name}}, {{amount}}, {{failed_date}}"
           />
-          {error && <p className="text-xs text-[#cf9a90]">{error}</p>}
-          <div className="flex justify-end pt-1">
-            <Button variant="primary" size="sm" type="submit" loading={isPending}>
-              Save template
-            </Button>
-          </div>
+          {error && <p role="alert" className="text-accent text-[13px]">{error}</p>}
+          <Button variant="primary" type="submit" loading={isPending}>Save template</Button>
         </form>
         <ReminderEmailPreview gym={gym} subject={previewSubject} bodyText={previewBody} />
       </div>
-    </Card>
+    </SettingsSection>
   );
 }
 
@@ -98,18 +80,19 @@ function ReminderEmailPreview({ gym, subject, bodyText }: { gym: ClientGym; subj
   const paragraphs = bodyText.split(/\n{2,}/);
 
   return (
-    <div className="rounded-[10px] bg-white p-5 text-[#222] text-[11px] leading-relaxed overflow-y-auto max-h-[380px]">
+    <div className="bg-paper text-paper-ink p-5 text-xs leading-relaxed overflow-y-auto max-h-[460px]">
       {gym.logo_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img src={gym.logo_url} alt={gym.name} className="h-8 mb-3 object-contain" />
       ) : (
-        <div className="text-sm font-medium mb-3">{gym.name}</div>
+        <p className="text-sm mb-3">{gym.name}</p>
       )}
-      <div className="text-[10px] text-[#999] mb-1 uppercase tracking-wide">Subject</div>
-      <div className="text-[13px] font-medium mb-4">{subject}</div>
+      <p className="text-[10px] text-paper-muted mb-1 uppercase tracking-wide">Subject</p>
+      <p className="text-[13px] mb-4">{subject}</p>
       {paragraphs.map((p, i) => (
         <p key={i} className="mb-2.5 whitespace-pre-line">{p}</p>
       ))}
-      <p className="text-[9px] text-[#999] mt-6">Sent by {gym.name} via kori/os.</p>
+      <p className="text-[10px] text-paper-muted mt-6">Sent by {gym.name} via kori/os.</p>
     </div>
   );
 }

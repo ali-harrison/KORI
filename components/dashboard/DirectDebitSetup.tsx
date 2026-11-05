@@ -58,12 +58,12 @@ export function DirectDebitSetup({ memberId, hasMandate }: Props) {
   return (
     <div className="mt-3 space-y-2">
       {!hasMandate && (
-        <Button variant="ghost" size="sm" className="w-full" onClick={handleClick} loading={isPending}>
+        <Button variant="secondary" size="sm" className="w-full" onClick={handleClick} loading={isPending}>
           Set up direct debit
         </Button>
       )}
       {notice && (
-        <p className={`text-xs ${notice.type === "success" ? "text-[#5fc9a4]" : "text-[#cf9a90]"}`}>
+        <p role="status" className={`text-xs ${notice.type === "success" ? "text-ok" : "text-accent"}`}>
           {notice.message}
         </p>
       )}

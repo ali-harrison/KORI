@@ -1,9 +1,6 @@
-// Renders "reo · en" (or just "en" if no reo is given). No "use client" —
-// works inside server components because it always renders both spans;
-// CSS (globals.css, keyed on a data-bilingual attribute the
-// ThemeSettingsProvider maintains) does the showing/hiding, not React
-// state. reo is deliberately optional: only pass it where the design
-// reference actually gives a translation — never invented.
+// Renders "reo · en", or just "en" when there's no te reo for it. reo is only
+// passed where a translation was actually given to us, never invented. CSS does
+// the switching (globals.css), so this works in server components with no flash.
 interface BilingualProps {
   reo?: string;
   en: string;
@@ -14,11 +11,8 @@ export function Bilingual({ reo, en, separator = " · " }: BilingualProps) {
   if (!reo) return <>{en}</>;
   return (
     <>
-      <span className="bilingual-reo">
-        {reo}
-        {separator}
-      </span>
-      <span className="bilingual-en">{en}</span>
+      <span className="reo" lang="mi">{reo}{separator}</span>
+      {en}
     </>
   );
 }

@@ -1,25 +1,22 @@
 "use client";
 
-import { Card, CardHeader, CardTitle } from "@/components/ui";
-import { ACCENT_OPTIONS, useThemeSettings } from "@/components/providers/ThemeSettingsProvider";
+import { useEffect, useState } from "react";
+import { DEFAULT_APPEARANCE, readAppearance, saveAppearance, type Appearance, type ThemePreference } from "@/lib/appearance";
 import { cn } from "@/utils";
+import { SettingsSection } from "./SettingsSection";
 
-function Toggle({
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  label: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
+const THEMES: { value: ThemePreference; label: string }[] = [
+  { value: "system", label: "Match device" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
+
+function Toggle({ label, description, checked, onChange }: { label: string; description: string; checked: boolean; onChange: (checked: boolean) => void }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3 border-t border-[#191e1a] first:border-t-0 first:pt-0">
+    <div className="flex items-center justify-between gap-4 py-3 border-t border-line">
       <div className="min-w-0">
-        <p className="text-[13px] text-[#e7eae8]">{label}</p>
-        <p className="text-xs text-[#646c66] mt-0.5">{description}</p>
+        <p>{label}</p>
+        <p className="text-xs text-fg-3 mt-0.5">{description}</p>
       </div>
       <button
         type="button"
@@ -27,63 +24,43 @@ function Toggle({
         aria-checked={checked}
         aria-label={label}
         onClick={() => onChange(!checked)}
-        className={cn(
-          "relative w-9 h-5 rounded-full flex-shrink-0 transition-colors duration-150 cursor-pointer",
-          checked ? "bg-[var(--accent)]" : "bg-[#262b27]"
-        )}
+        className={cn("relative w-9 h-5 flex-shrink-0 border transition-colors duration-150 cursor-pointer", checked ? "bg-fg border-fg" : "bg-transparent border-line-strong")}
       >
-        <span
-          className={cn(
-            "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-[#0b0d0c] transition-transform duration-150",
-            checked && "translate-x-4"
-          )}
-        />
+        <span aria-hidden className={cn("absolute top-0.5 left-0.5 size-3.5 transition-transform duration-150", checked ? "translate-x-4 bg-bg" : "bg-fg-3")} />
       </button>
     </div>
   );
 }
 
 export function AppearanceCard() {
-  const { accent, bilingual, motif, setAccent, setBilingual, setMotif } = useThemeSettings();
+  const [appearance, setAppearance] = useState<Appearance>(DEFAULT_APPEARANCE);
+
+  useEffect(() => setAppearance(readAppearance()), []);
+
+  function update(changes: Partial<Appearance>) {
+    const next = { ...appearance, ...changes };
+    setAppearance(next);
+    saveAppearance(next);
+  }
 
   return (
-    <Card>
-      <CardHeader className="pb-5 mb-5">
-        <CardTitle description="Saved on this device">Appearance</CardTitle>
-      </CardHeader>
-      <div>
-        <Toggle
-          label="Te reo Māori labels"
-          description="Show te reo alongside English in the menu and page titles"
-          checked={bilingual}
-          onChange={setBilingual}
-        />
-        <Toggle
-          label="Pūhoro motif"
-          description="Show the pattern in the sidebar and on empty states"
-          checked={motif}
-          onChange={setMotif}
-        />
+    <SettingsSection title="Appearance" description="Saved on this device.">
+      <div role="radiogroup" aria-label="Theme" className="flex border border-line-strong mb-4 w-fit max-w-full">
+        {THEMES.map((theme) => (
+          <button
+            key={theme.value}
+            type="button"
+            role="radio"
+            aria-checked={appearance.theme === theme.value}
+            onClick={() => update({ theme: theme.value })}
+            className={cn("h-9 px-3.5 text-[13px] transition-colors duration-150 cursor-pointer", appearance.theme === theme.value ? "bg-fg text-bg" : "text-fg-2 hover:text-fg")}
+          >
+            {theme.label}
+          </button>
+        ))}
       </div>
-      <div className="flex items-center justify-between gap-4 pt-3 border-t border-[#191e1a]">
-        <p className="text-[13px] text-[#e7eae8]">Accent colour</p>
-        <div className="flex items-center gap-2">
-          {ACCENT_OPTIONS.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setAccent(option)}
-              aria-label={`Use accent colour ${option}`}
-              aria-pressed={accent === option}
-              className={cn(
-                "w-6 h-6 rounded-full cursor-pointer outline-offset-2",
-                accent === option && "outline-2 outline-[#e7eae8]"
-              )}
-              style={{ backgroundColor: option }}
-            />
-          ))}
-        </div>
-      </div>
-    </Card>
+      <Toggle label="Te reo Māori labels" description="Show te reo alongside English in the menu and page titles" checked={appearance.bilingual} onChange={(bilingual) => update({ bilingual })} />
+      <Toggle label="Poutama pattern" description="Show the stepped pattern in the sidebar and on empty states" checked={appearance.pattern} onChange={(pattern) => update({ pattern })} />
+    </SettingsSection>
   );
 }

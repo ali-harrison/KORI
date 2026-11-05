@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Modal } from "@/components/ui/Modal";
-import { Button } from "@/components/ui/Button";
-import { Input, Select } from "@/components/ui/Input";
+import { Button, Dialog, Input, Select } from "@/components/ui";
 import { createMember } from "@/app/actions/members";
 import type { Plan } from "@/types";
 
@@ -18,6 +16,11 @@ export function AddMemberModal({ open, onClose, gymId, plans }: AddMemberModalPr
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  function close() {
+    setError(null);
+    onClose();
+  }
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -28,7 +31,7 @@ export function AddMemberModal({ open, onClose, gymId, plans }: AddMemberModalPr
       if ("error" in result) {
         setError(result.error);
       } else {
-        onClose();
+        close();
       }
     });
   }
@@ -39,30 +42,28 @@ export function AddMemberModal({ open, onClose, gymId, plans }: AddMemberModalPr
   ];
 
   return (
-    <Modal
+    <Dialog
       open={open}
-      onClose={onClose}
+      onClose={close}
       title="Add member"
       description="Manually add a new member to your gym."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button variant="primary" type="submit" form="add-member-form" loading={isPending}>
-            Add member
-          </Button>
+          <Button variant="ghost" onClick={close} disabled={isPending}>Cancel</Button>
+          <Button variant="primary" type="submit" form="add-member-form" loading={isPending}>Add member</Button>
         </>
       }
     >
       <form id="add-member-form" onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Input label="First name" name="first_name" placeholder="Sarah" required autoFocus />
+          <Input label="First name" name="first_name" placeholder="Sarah" required />
           <Input label="Last name" name="last_name" placeholder="Mitchell" required />
         </div>
         <Input label="Email" name="email" type="email" placeholder="sarah@example.com" required />
         <Input label="Phone" name="phone" type="tel" placeholder="+64 21 000 0000" />
         <Select label="Plan" name="plan_id" options={planOptions} />
-        {error && <p className="text-xs text-[#cf7263]">{error}</p>}
+        {error && <p role="alert" className="text-accent text-[13px]">{error}</p>}
       </form>
-    </Modal>
+    </Dialog>
   );
 }

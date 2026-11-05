@@ -1,15 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getGym, getContracts } from "@/lib/queries";
-import { DataTable, DataTableRow, EmptyState, Badge } from "@/components/ui";
-import { StatCard } from "@/components/dashboard/StatCard";
+import { Badge, EmptyState, PageHeader, Panel, Table, Td, Th, Tr, buttonClass } from "@/components/ui";
 import { ContractActions } from "@/components/dashboard/ContractActions";
 import { formatDate } from "@/utils";
 
 export const metadata: Metadata = { title: "Contracts" };
-
-// The last column fits the widest row: Resend, Mark as signed and Download.
-const GRID = "minmax(0,1.5fr) minmax(0,1.4fr) 64px 64px 96px 280px";
 
 export default async function ContractsPage() {
   const gym = await getGym();
@@ -20,63 +16,60 @@ export default async function ContractsPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-2.5 mb-5">
-        <span className="text-[17px] font-medium">Contracts</span>
-        <span className="text-[13px] text-[#646c66]">{contracts.length} total</span>
-        <div className="flex-1" />
-        <Link href="/dashboard/settings#contract-template" className="text-xs text-[var(--accent)] hover:opacity-80 transition-opacity duration-150">
-          Edit template
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="Contracts"
+        title={`${signed} signed, ${pending} waiting on a signature`}
+        actions={<Link href="/dashboard/settings#contract-template" className={buttonClass("secondary")}>Edit template</Link>}
+      />
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-5">
-        <StatCard label="Total" value={contracts.length} />
-        <StatCard label="Signed" value={signed} variant="success" />
-        <StatCard label="Awaiting signature" value={pending} variant="warning" />
+      <div className="seams enter grid-cols-1">
+        <Panel>
+          {contracts.length === 0 ? (
+            <EmptyState title={{ en: "No contracts yet" }} description="Send one from a member's profile and it'll show up here." />
+          ) : (
+            <Table caption="Contracts" minWidth={860}>
+              <thead>
+                <tr>
+                  <Th>Member</Th>
+                  <Th>Plan</Th>
+                  <Th>Sent</Th>
+                  <Th>Signed</Th>
+                  <Th>Status</Th>
+                  <Th><span className="sr-only">Actions</span></Th>
+                </tr>
+              </thead>
+              <tbody>
+                {contracts.map((contract) => {
+                  const member = contract.member as {
+                    id: string;
+                    first_name: string;
+                    last_name: string;
+                    plan?: { name: string } | null;
+                  };
+                  return (
+                    <Tr key={contract.id}>
+                      <Td>
+                        <Link href={`/dashboard/members/${member.id}`} className="hover:text-accent transition-colors duration-150">
+                          {member.first_name} {member.last_name}
+                        </Link>
+                      </Td>
+                      <Td className="text-fg-2 text-[13px]">{member.plan?.name ?? "—"}</Td>
+                      <Td className="label whitespace-nowrap">{formatDate(contract.last_sent_at ?? contract.created_at, { day: "numeric", month: "short" })}</Td>
+                      <Td className="label whitespace-nowrap">{contract.signed_at ? formatDate(contract.signed_at, { day: "numeric", month: "short" }) : "—"}</Td>
+                      <Td>
+                        <Badge variant={contract.status === "signed" ? "success" : "warning"}>
+                          {contract.status === "signed" ? "Signed" : "Pending"}
+                        </Badge>
+                      </Td>
+                      <Td><ContractActions contract={contract} memberId={member.id} gymId={gym.id} /></Td>
+                    </Tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          )}
+        </Panel>
       </div>
-
-      {contracts.length === 0 ? (
-        <div className="bg-[#111412] border border-[#1f2420] rounded-[10px]">
-          <EmptyState
-            title={{ en: "No contracts yet" }}
-            description="Send one from a member's profile and it'll show up here."
-          />
-        </div>
-      ) : (
-        <DataTable gridTemplateColumns={GRID} minWidth={860} headers={["Member", "Plan", "Sent", "Signed", "Status", ""]}>
-          {contracts.map((contract) => {
-            const member = contract.member as {
-              id: string;
-              first_name: string;
-              last_name: string;
-              plan?: { name: string } | null;
-            };
-            return (
-              <DataTableRow key={contract.id} gridTemplateColumns={GRID}>
-                <Link
-                  href={`/dashboard/members/${member.id}`}
-                  className="text-[13px] font-medium text-[#e7eae8] hover:text-[var(--accent)] transition-colors duration-150 truncate"
-                >
-                  {member.first_name} {member.last_name}
-                </Link>
-                <div className="text-[13px] text-[#8f978f] truncate">{member.plan?.name ?? "—"}</div>
-                <div className="text-[13px] text-[#8f978f] tabular-nums">
-                  {formatDate(contract.last_sent_at ?? contract.created_at, { day: "numeric", month: "short" })}
-                </div>
-                <div className="text-[13px] text-[#8f978f] tabular-nums">
-                  {contract.signed_at ? formatDate(contract.signed_at, { day: "numeric", month: "short" }) : "—"}
-                </div>
-                <div>
-                  <Badge variant={contract.status === "signed" ? "success" : "warning"} dot>
-                    {contract.status === "signed" ? "Signed" : "Pending"}
-                  </Badge>
-                </div>
-                <ContractActions contract={contract} memberId={member.id} gymId={gym.id} />
-              </DataTableRow>
-            );
-          })}
-        </DataTable>
-      )}
     </div>
   );
 }

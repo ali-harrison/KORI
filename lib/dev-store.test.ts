@@ -35,6 +35,15 @@ describe("seed data tells one consistent story", () => {
     }
   });
 
+  // The headline, the chart and the ledger are three views of the same money.
+  it("the collected figure, the chart and the rows behind it all agree", () => {
+    const stat = DEMO.getDashboardStats(state).monthlyRevenue;
+    const rows = DEMO.getCollectedThisMonth(state);
+
+    expect(rows.reduce((sum, payment) => sum + payment.amount, 0)).toBe(stat);
+    expect(DEMO.getRevenueSeries(state).current.at(-1)).toBe(stat);
+  });
+
   it("every mandate state is represented", () => {
     const summary = DEMO.getMandateSummary(state);
     for (const mandateState of ["active", "pending", "cancelling", "on_hold", "cancelled", "none"] as const) {

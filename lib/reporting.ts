@@ -1,5 +1,5 @@
-import type { ActivityItem, MandateSummary, Member, PaymentStatus, SubmissionDaySummary } from "@/types";
-import { formatCurrency, getMandateBadgeState, toLocalISODate } from "@/utils";
+import type { ActivityItem, CollectedPayment, MandateSummary, Member, PaymentStatus, RevenueSeries, SubmissionDaySummary } from "@/types";
+import { formatCurrency, formatDate, getMandateBadgeState, toLocalISODate } from "@/utils";
 
 // Pure aggregation over rows that are already fetched — no Supabase, no Next.
 // lib/queries.ts and the demo store (lib/dev-store.ts) both feed their rows
@@ -14,6 +14,66 @@ export function currentMonthRange(now = new Date()): { start: string; end: strin
     start: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString(),
     end: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString(),
   };
+}
+
+// Buckets on the stored date in paid_at, the same way currentMonthRange windows
+// the "collected this month" stat, so the chart's last point always equals it.
+export function buildRevenueSeries(payments: { amount: number; paid_at: string | null }[], now = new Date()): RevenueSeries {
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  const daysIn = (y: number, m: number) => new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+  const key = (y: number, m: number) => new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 7);
+
+  function cumulative(monthKey: string, days: number): number[] {
+    const perDay = new Array<number>(days).fill(0);
+    for (const payment of payments) {
+      if (!payment.paid_at?.startsWith(monthKey)) continue;
+      const day = Number(payment.paid_at.slice(8, 10));
+      if (day >= 1 && day <= days) perDay[day - 1] += payment.amount;
+    }
+    let total = 0;
+    return perDay.map((amount) => (total += amount));
+  }
+
+  const monthName = (m: number) => formatDate(new Date(Date.UTC(year, m, 15)), { month: "long", timeZone: "UTC" });
+
+  return {
+    current: cumulative(key(year, month), now.getUTCDate()),
+    previous: cumulative(key(year, month - 1), daysIn(year, month - 1)),
+    daysInMonth: daysIn(year, month),
+    currentLabel: monthName(month),
+    previousLabel: monthName(month - 1),
+  };
+}
+
+// Where this month stands against the same day last month, or null when last
+// month has nothing to compare with.
+export function paceAgainstLastMonth(series: RevenueSeries): number | null {
+  const today = series.current.length;
+  const sameDayLastMonth = series.previous[Math.min(today, series.previous.length) - 1];
+  if (!sameDayLastMonth) return null;
+  return Math.round(((series.current[today - 1] - sameDayLastMonth) / sameDayLastMonth) * 100);
+}
+
+// A spreadsheet runs a cell starting with these as a formula, and a member's
+// name or a payment note is free text, so the export neutralises them.
+function csvCell(value: string): string {
+  const safe = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+}
+
+export function collectedToCsv(payments: CollectedPayment[]): string {
+  const header = "Date,Member,Amount (NZD),Method,Note";
+  const rows = payments.map((payment) =>
+    [
+      payment.paidAt.slice(0, 10),
+      csvCell(payment.memberName),
+      payment.amount.toFixed(2),
+      payment.provider === "gocardless" ? "Direct debit" : "Manual",
+      csvCell(payment.note ?? ""),
+    ].join(",")
+  );
+  return [header, ...rows].join("\r\n") + "\r\n";
 }
 
 // A failed payment only needs attention until the member's money comes in.

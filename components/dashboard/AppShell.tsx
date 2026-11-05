@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { DemoBanner } from "./DemoBanner";
-import { ThemeSettingsProvider } from "@/components/providers/ThemeSettingsProvider";
+import { CommandPalette } from "./CommandPalette";
 
 interface AppShellProps {
   gymName: string;
@@ -14,53 +14,54 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-// Persistent chrome across every /dashboard/* route — sidebar + topbar +
-// scrollable content. Page-specific action buttons (Add member, Record
-// payment, New plan) live in each page's own content, not here — the
-// topbar has no actions slot in this design, only title + global search.
-// Below lg the sidebar becomes a drawer opened from the topbar.
+// Persistent chrome across every /dashboard/* route. Below lg the sidebar
+// becomes a drawer opened from the topbar.
 export function AppShell({ gymName, memberCount, userEmail, isDemo, children }: AppShellProps) {
   const [navOpen, setNavOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   useEffect(() => {
-    if (!navOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setNavOpen(false);
-    };
+    function handler(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
+      if (event.key === "Escape") setNavOpen(false);
+    }
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [navOpen]);
+  }, []);
 
   const sidebarProps = { gymName, memberCount, userEmail, isDemo };
 
   return (
-    <ThemeSettingsProvider>
-      <div className="flex h-dvh bg-[#0b0d0c] text-[14px]">
-        <Sidebar {...sidebarProps} className="hidden lg:flex" />
+    <div className="flex h-dvh bg-bg">
+      <a href="#content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-raised focus:px-3 focus:py-2">
+        Skip to content
+      </a>
 
-        {navOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <button
-              aria-label="Close menu"
-              onClick={() => setNavOpen(false)}
-              className="absolute inset-0 bg-[rgba(5,7,6,0.62)] animate-[so-fade_150ms_ease]"
-            />
-            <Sidebar
-              {...sidebarProps}
-              className="flex relative animate-[so-fade_150ms_ease]"
-              onNavigate={() => setNavOpen(false)}
-            />
-          </div>
-        )}
+      <Sidebar {...sidebarProps} className="hidden lg:flex" />
 
-        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          {isDemo && <DemoBanner />}
-          <Topbar userEmail={userEmail} onOpenNav={() => setNavOpen(true)} />
-          <main className="flex-1 overflow-y-auto">
-            <div className="max-w-[1120px] mx-auto px-4 sm:px-7 py-5 sm:py-[26px] pb-12">{children}</div>
-          </main>
+      {navOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <button
+            aria-label="Close menu"
+            onClick={() => setNavOpen(false)}
+            className="absolute inset-0 bg-[var(--scrim)] animate-[fade_150ms_ease] cursor-pointer"
+          />
+          <Sidebar {...sidebarProps} className="flex relative animate-[fade_150ms_ease]" onNavigate={() => setNavOpen(false)} />
         </div>
+      )}
+
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+        {isDemo && <DemoBanner />}
+        <Topbar onOpenNav={() => setNavOpen(true)} onOpenSearch={() => setSearchOpen(true)} />
+        <main id="content" tabIndex={-1} className="flex-1 overflow-y-auto outline-none">
+          <div className="max-w-[1240px] mx-auto px-4 sm:px-8 py-6 sm:py-9 pb-14">{children}</div>
+        </main>
       </div>
-    </ThemeSettingsProvider>
+
+      <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
+    </div>
   );
 }

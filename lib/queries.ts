@@ -3,9 +3,10 @@ import { redirect } from "next/navigation";
 import type {
   Gym, Member, Plan, Contract, Payment, MemberWithPlan, ContractWithMember,
   DashboardStats, FailedPaymentAlert, UpcomingCharge, SubmissionDaySummary, MandateSummary, ActivityItem,
+  CollectedPayment, RevenueSeries,
 } from "@/types";
 import { monthlyEquivalentPrice, toLocalISODate } from "@/utils";
-import { buildActivity, currentMonthRange, filterOpenFailures, summarizeMandates, summarizeSubmissions } from "./reporting";
+import { buildActivity, buildRevenueSeries, currentMonthRange, filterOpenFailures, summarizeMandates, summarizeSubmissions } from "./reporting";
 import { isDemoMode } from "./demo-mode";
 import { demoState } from "./demo-session";
 import { DEMO_USER } from "./dev-data";
@@ -171,6 +172,52 @@ export async function getFailedPaymentAlerts(gymId: string): Promise<FailedPayme
   }));
 
   return filterOpenFailures(alerts, succeeded ?? []);
+}
+
+export async function getRevenueSeries(gymId: string): Promise<RevenueSeries> {
+  if (DEMO_MODE) return DEMO.getRevenueSeries(await demoState());
+  const supabase = await createServerSupabaseClient();
+  const now = new Date();
+  const lastMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString();
+
+  const { data, error } = await supabase
+    .from("payments")
+    .select("amount, paid_at")
+    .eq("gym_id", gymId)
+    .eq("status", "succeeded")
+    .gte("paid_at", lastMonth);
+
+  if (error) throw error;
+  return buildRevenueSeries(data ?? []);
+}
+
+// The rows behind "collected this month": same window, same filter, so the
+// list on the Billing page always adds up to the figure on the Overview.
+export async function getCollectedThisMonth(gymId: string): Promise<CollectedPayment[]> {
+  if (DEMO_MODE) return DEMO.getCollectedThisMonth(await demoState());
+  const supabase = await createServerSupabaseClient();
+  const { start, end } = currentMonthRange();
+
+  const { data, error } = await supabase
+    .from("payments")
+    .select("id, amount, paid_at, provider, note, member:members(id, first_name, last_name)")
+    .eq("gym_id", gymId)
+    .eq("status", "succeeded")
+    .gte("paid_at", start)
+    .lt("paid_at", end)
+    .order("paid_at", { ascending: false });
+
+  if (error) throw error;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((p: any) => ({
+    id: p.id,
+    memberId: p.member?.id ?? null,
+    memberName: p.member ? `${p.member.first_name} ${p.member.last_name}` : "Unknown member",
+    amount: p.amount,
+    paidAt: p.paid_at,
+    provider: p.provider,
+    note: p.note,
+  }));
 }
 
 // Lightweight count for chrome decoration (Sidebar's gym switcher) — avoids

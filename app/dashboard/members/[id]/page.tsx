@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getGym, getMember, getMemberContracts, getMemberPayments, getPlans } from "@/lib/queries";
-import { Card, CardTitle, Badge } from "@/components/ui";
+import { Badge, PageHeader, Panel } from "@/components/ui";
 import { MemberStatusActions } from "@/components/dashboard/MemberStatusActions";
 import { PaymentsCard } from "@/components/dashboard/PaymentsCard";
 import { MembershipCard } from "@/components/dashboard/MembershipCard";
 import { ContractActions } from "@/components/dashboard/ContractActions";
 import {
   formatDate,
-  getInitials,
   getMandateBadgeState,
   MANDATE_STATE_LABEL,
   MANDATE_STATE_VARIANT,
@@ -54,105 +53,67 @@ export default async function MemberDetailPage({
   const mandateState = getMandateBadgeState(member);
   const billingDate = billingDateDetail(member);
 
+  const facts: { label: string; value: React.ReactNode }[] = [
+    { label: "Status", value: <Badge variant={MEMBER_STATUS_VARIANT[member.status]}>{MEMBER_STATUS_LABEL[member.status]}</Badge> },
+    { label: "Direct debit", value: <Badge variant={MANDATE_STATE_VARIANT[mandateState]}>{MANDATE_STATE_LABEL[mandateState]}</Badge> },
+    { label: "Member since", value: formatDate(member.start_date ?? member.created_at) },
+    billingDate,
+  ];
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3 min-h-7">
-        <Link href="/dashboard/members" className="text-xs text-[#8f978f] hover:text-[#e7eae8] transition-colors duration-150">
-          ← All members
-        </Link>
-        <MemberStatusActions
-          memberId={member.id}
-          gymId={gym.id}
-          currentStatus={member.status}
-          mandateState={mandateState}
-        />
-      </div>
+      <PageHeader
+        eyebrow={
+          <Link href="/dashboard/members" className="hover:text-fg transition-colors duration-150">
+            <span aria-hidden>← </span>All members
+          </Link>
+        }
+        title={`${member.first_name} ${member.last_name}`}
+        lede={[member.email, member.phone].filter(Boolean).join(" / ")}
+        actions={
+          <MemberStatusActions memberId={member.id} gymId={gym.id} currentStatus={member.status} mandateState={mandateState} />
+        }
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Left — member info */}
-        <div className="lg:col-span-2 space-y-5 min-w-0">
-          <Card>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-4 min-w-0">
-                <div className="w-12 h-12 rounded-full bg-[#171c18] border border-[#232823] flex items-center justify-center flex-shrink-0">
-                  <span className="text-base font-medium text-[#99a19b]">
-                    {getInitials(member.first_name, member.last_name)}
-                  </span>
-                </div>
-                <div className="space-y-1 min-w-0">
-                  <h1 className="text-lg font-medium text-[#e7eae8] leading-tight">
-                    {member.first_name} {member.last_name}
-                  </h1>
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-x-2">
-                    <span className="text-xs text-[#8f978f] break-all">{member.email}</span>
-                    {member.phone && (
-                      <>
-                        <span className="hidden sm:inline text-[#646c66]">·</span>
-                        <span className="text-xs text-[#8f978f]">{member.phone}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
+      <div className="seams enter grid-cols-1 lg:grid-cols-12">
+        <div className="lg:col-span-8 min-w-0 bg-bg">
+          <dl className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-line border-b border-line">
+            {facts.map((fact) => (
+              <div key={fact.label} className="bg-bg px-4 py-3.5 min-w-0">
+                <dt className="label">{fact.label}</dt>
+                <dd className="mt-1.5 text-[13px]">{fact.value}</dd>
               </div>
-              <Badge variant={MEMBER_STATUS_VARIANT[member.status]} dot className="flex-shrink-0">
-                {MEMBER_STATUS_LABEL[member.status]}
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 pt-5 border-t border-[#1f2420]">
-              {[
-                {
-                  label: "Member since",
-                  value: formatDate(member.start_date ?? member.created_at),
-                },
-                billingDate,
-                {
-                  label: "Direct debit",
-                  value: <Badge variant={MANDATE_STATE_VARIANT[mandateState]} dot>{MANDATE_STATE_LABEL[mandateState]}</Badge>,
-                },
-              ].map((item) => (
-                <div key={item.label} className="flex flex-col gap-1.5">
-                  <span className="text-[10px] text-[#646c66] uppercase tracking-wider font-medium">
-                    {item.label}
-                  </span>
-                  <span className="text-xs text-[#e7eae8]">{item.value}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-
+            ))}
+          </dl>
           <PaymentsCard memberId={member.id} gymId={gym.id} payments={payments} />
         </div>
 
-        {/* Right — plan + contract */}
-        <div className="space-y-5 min-w-0">
+        <div className="lg:col-span-4 min-w-0 bg-bg">
           <MembershipCard member={member} gymId={gym.id} plans={plans} />
 
-          <Card>
-            <CardTitle description="Membership agreement">Contract</CardTitle>
-            <div className="mt-4 flex flex-col gap-3">
-              {latestContract && (
+          <Panel title="Contract">
+            <div className="p-4 flex flex-col gap-3">
+              {latestContract ? (
                 <>
-                  <div className="flex items-center justify-between py-2 border-b border-[#1f2420]">
-                    <span className="text-xs text-[#8f978f]">Status</span>
-                    <Badge variant={latestContract.status === "signed" ? "success" : "warning"} dot>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-fg-3 text-[13px]">Status</span>
+                    <Badge variant={latestContract.status === "signed" ? "success" : "warning"}>
                       {latestContract.status === "signed" ? "Signed" : "Pending signature"}
                     </Badge>
                   </div>
                   {latestContract.signed_at && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-[#8f978f]">Signed</span>
-                      <span className="text-xs text-[#e7eae8]">
-                        {formatDate(latestContract.signed_at)}
-                      </span>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-fg-3 text-[13px]">Signed</span>
+                      <span className="text-[13px]">{formatDate(latestContract.signed_at)}</span>
                     </div>
                   )}
                 </>
+              ) : (
+                <p className="text-fg-3">No contract on file.</p>
               )}
-              {!latestContract && <p className="text-xs text-[#646c66] text-center py-2">No contract on file.</p>}
               <ContractActions contract={latestContract} memberId={member.id} gymId={gym.id} layout="stack" />
             </div>
-          </Card>
+          </Panel>
         </div>
       </div>
     </div>

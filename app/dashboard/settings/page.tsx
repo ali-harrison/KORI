@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getGym, DEMO_MODE } from "@/lib/queries";
 import { SettingsForm } from "@/components/dashboard/SettingsForm";
+import { Bilingual, PageHeader } from "@/components/ui";
 import { toClientGym } from "@/utils";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -10,10 +11,7 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <div className="mb-[22px]">
-        <h1 className="text-xl font-medium">Settings</h1>
-        <p className="text-[13px] text-[#8f978f] mt-[3px]">Gym profile and integrations</p>
-      </div>
+      <PageHeader eyebrow={<Bilingual reo="Tautuhinga" en="Settings" />} title="Your gym, your wording" />
       <SettingsForm gym={toClientGym(gym)} isDemo={DEMO_MODE} />
     </div>
   );

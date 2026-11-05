@@ -1,85 +1,43 @@
-"use client";
-
 import { cn } from "@/utils";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ButtonSize = "sm" | "md" | "lg";
 
+const base =
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control transition-colors duration-150 cursor-pointer select-none disabled:opacity-45 disabled:cursor-not-allowed";
+
+const variants: Record<ButtonVariant, string> = {
+  primary: "bg-accent-fill text-on-accent font-medium hover:brightness-110",
+  secondary: "border border-line-strong text-fg hover:bg-raised",
+  ghost: "text-fg-2 hover:text-fg hover:bg-raised",
+  danger: "border border-accent text-accent hover:bg-glow",
+};
+
+const sizes: Record<ButtonSize, string> = {
+  sm: "h-8 px-3 text-xs",
+  md: "h-9 px-3.5 text-[13px]",
+  lg: "h-11 px-5 text-sm",
+};
+
+// For a link styled as a button. Nesting a <button> in an <a> is invalid HTML
+// and puts two tab stops on one control.
+export function buttonClass(variant: ButtonVariant = "secondary", size: ButtonSize = "md", className?: string): string {
+  return cn(base, variants[variant], sizes[size], className);
+}
+
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
-  icon?: React.ReactNode;
-  iconRight?: React.ReactNode;
 }
 
-const variantStyles: Record<ButtonVariant, string> = {
-  primary: [
-    "bg-[var(--accent)] text-[#0b0d0c] font-medium",
-    "hover:opacity-90",
-    "disabled:opacity-40",
-  ].join(" "),
-  secondary: [
-    "bg-[#151a16] text-[#e7eae8] font-normal",
-    "border border-[#262b27]",
-    "hover:border-[#3a403b]",
-    "disabled:opacity-40",
-  ].join(" "),
-  ghost: [
-    "bg-transparent text-[#b9c0ba] font-normal",
-    "border border-[#262b27]",
-    "hover:border-[#3a403b]",
-    "disabled:opacity-40",
-  ].join(" "),
-  danger: [
-    "bg-[rgba(207,114,99,0.10)] text-[#cf7263] font-normal",
-    "border border-[rgba(207,114,99,0.24)]",
-    "hover:bg-[rgba(207,114,99,0.16)] hover:border-[rgba(207,114,99,0.4)]",
-    "disabled:opacity-40",
-  ].join(" "),
-};
-
-const sizeStyles: Record<ButtonSize, string> = {
-  sm: "h-7 px-3 text-xs rounded-[7px] gap-1.5",
-  md: "h-9 px-3.5 text-[13px] rounded-[8px] gap-2",
-  lg: "h-11 px-5 text-sm rounded-[8px] gap-2",
-};
-
-export function Button({
-  variant = "secondary",
-  size = "md",
-  loading = false,
-  icon,
-  iconRight,
-  className,
-  children,
-  disabled,
-  ...props
-}: ButtonProps) {
+export function Button({ variant = "secondary", size = "md", loading = false, className, children, disabled, ...props }: ButtonProps) {
   return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap",
-        "transition-colors duration-150 ease-out",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]",
-        "cursor-pointer select-none",
-        variantStyles[variant],
-        sizeStyles[size],
-        (disabled || loading) && "cursor-not-allowed",
-        className
+    <button className={buttonClass(variant, size, className)} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>
+      {loading && (
+        <span aria-hidden className="size-3 border-[1.5px] border-current border-t-transparent rounded-full animate-spin" />
       )}
-      disabled={disabled || loading}
-      {...props}
-    >
-      {loading ? (
-        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin opacity-70" />
-      ) : icon ? (
-        <span className="opacity-70 flex-shrink-0">{icon}</span>
-      ) : null}
       {children}
-      {iconRight && !loading && (
-        <span className="opacity-70 flex-shrink-0">{iconRight}</span>
-      )}
     </button>
   );
 }

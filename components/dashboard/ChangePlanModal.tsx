@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Modal } from "@/components/ui/Modal";
-import { Button } from "@/components/ui/Button";
-import { Select } from "@/components/ui/Input";
+import { Button, Dialog, Select } from "@/components/ui";
 import { assignMemberPlan } from "@/app/actions/members";
 import type { Plan } from "@/types";
 
@@ -41,7 +39,7 @@ export function ChangePlanModal({ open, onClose, memberId, gymId, currentPlanId,
   ];
 
   return (
-    <Modal
+    <Dialog
       open={open}
       onClose={onClose}
       title="Change plan"
@@ -50,20 +48,17 @@ export function ChangePlanModal({ open, onClose, memberId, gymId, currentPlanId,
           ? "Changes the plan shown here. Their GoCardless subscription keeps collecting the old amount until it's changed in GoCardless."
           : "Choose which plan this member is on."
       }
-      size="sm"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={isPending}>Cancel</Button>
-          <Button variant="primary" onClick={handleConfirm} loading={isPending}>
-            Save
-          </Button>
+          <Button variant="primary" onClick={handleConfirm} loading={isPending}>Save</Button>
         </>
       }
     >
       <div className="space-y-3">
         <Select label="Plan" options={planOptions} value={planId} onChange={(e) => setPlanId(e.target.value)} />
-        {error && <p className="text-xs text-[#cf7263]">{error}</p>}
+        {error && <p role="alert" className="text-accent text-[13px]">{error}</p>}
       </div>
-    </Modal>
+    </Dialog>
   );
 }

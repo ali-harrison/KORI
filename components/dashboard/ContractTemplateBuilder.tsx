@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Card, CardHeader, CardTitle, Button } from "@/components/ui";
-import { Textarea } from "@/components/ui/Input";
+import { Button, Textarea } from "@/components/ui";
+import { SavedNote, SettingsSection } from "@/components/dashboard/SettingsSection";
 import { updateContractTemplate } from "@/app/actions/gym";
 import { renderTemplate } from "@/lib/templates";
 import type { ClientGym } from "@/types";
@@ -46,39 +46,28 @@ export function ContractTemplateBuilder({ gym }: Props) {
   const previewBody = renderTemplate(value, { ...SAMPLE_TOKENS, gym_name: gym.name });
 
   return (
-    <Card id="contract-template">
-      <CardHeader className="pb-5 mb-5">
-        <CardTitle description="Rendered into the PDF attached when you send a contract to a member">
-          Contract template
-        </CardTitle>
-        {saved && (
-          <span className="text-xs text-[#5fc9a4] flex items-center gap-1.5">
-            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8l3.5 3.5L13 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Saved
-          </span>
-        )}
-      </CardHeader>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <form onSubmit={handleSubmit} className="space-y-3">
+    <SettingsSection
+      id="contract-template"
+      title="Contract template"
+      description="Rendered into the PDF attached when you send a contract to a member."
+      status={saved ? <SavedNote /> : undefined}
+    >
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+        <form onSubmit={handleSubmit} className="space-y-3 min-w-0">
           <Textarea
+            aria-label="Contract template"
             name="contract_template"
             value={value}
             onChange={(e) => setValue(e.target.value)}
             rows={12}
             hint="Available: {{member_name}}, {{gym_name}}, {{plan_name}}, {{amount}}, {{start_date}}"
           />
-          {error && <p className="text-xs text-[#cf9a90]">{error}</p>}
-          <div className="flex justify-end pt-1">
-            <Button variant="primary" size="sm" type="submit" loading={isPending}>
-              Save template
-            </Button>
-          </div>
+          {error && <p role="alert" className="text-accent text-[13px]">{error}</p>}
+          <Button variant="primary" type="submit" loading={isPending}>Save template</Button>
         </form>
         <ContractPdfPreview gym={gym} bodyText={previewBody} memberName={SAMPLE_TOKENS.member_name} />
       </div>
-    </Card>
+    </SettingsSection>
   );
 }
 
@@ -91,27 +80,28 @@ function ContractPdfPreview({ gym, bodyText, memberName }: { gym: ClientGym; bod
   const contactLine = [gym.address, gym.phone, gym.email].filter(Boolean).join(" · ");
 
   return (
-    <div className="rounded-[10px] bg-[#e9e7e2] p-5 text-[#1a1a1a] text-[10px] leading-relaxed overflow-y-auto max-h-[420px]">
+    <div className="bg-paper text-paper-ink p-5 text-[11px] leading-relaxed overflow-y-auto max-h-[420px]">
       {gym.logo_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img src={gym.logo_url} alt={gym.name} className="h-8 mb-2 object-contain" />
       ) : (
-        <div className="text-sm font-medium mb-0.5">{gym.name}</div>
+        <p className="text-sm mb-0.5">{gym.name}</p>
       )}
-      {gym.logo_url && <div className="text-sm font-medium mb-0.5">{gym.name}</div>}
-      {contactLine && <div className="text-[9px] text-[#666] mb-3">{contactLine}</div>}
-      <div className="border-b border-[#ccc] mb-3" />
-      <div className="text-[11px] font-medium uppercase tracking-wide mb-3">Membership Agreement</div>
+      {gym.logo_url && <p className="text-sm mb-0.5">{gym.name}</p>}
+      {contactLine && <p className="text-[10px] text-paper-muted mb-3">{contactLine}</p>}
+      <div className="border-b border-paper-line mb-3" />
+      <p className="text-[11px] uppercase tracking-wide mb-3">Membership Agreement</p>
       {paragraphs.map((p, i) => (
         <p key={i} className="mb-2.5 whitespace-pre-line">{p}</p>
       ))}
       <div className="flex justify-between mt-8 gap-4">
         <div className="flex-1">
-          <div className="border-b border-[#1a1a1a] h-6" />
-          <div className="text-[9px] text-[#666] mt-1">{memberName} — Member</div>
+          <div className="border-b border-paper-ink h-6" />
+          <p className="text-[10px] text-paper-muted mt-1">{memberName} — Member</p>
         </div>
         <div className="flex-1">
-          <div className="border-b border-[#1a1a1a] h-6" />
-          <div className="text-[9px] text-[#666] mt-1">Gym Owner — {gym.name}</div>
+          <div className="border-b border-paper-ink h-6" />
+          <p className="text-[10px] text-paper-muted mt-1">Gym Owner — {gym.name}</p>
         </div>
       </div>
     </div>

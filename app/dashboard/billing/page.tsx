@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import {
-  getGym,
-  getUpcomingCharges,
-  getRecentSubmissions,
-  getMandateSummary,
+  getCollectedThisMonth,
   getFailedPaymentAlerts,
+  getGym,
+  getMandateSummary,
+  getRecentSubmissions,
+  getUpcomingCharges,
 } from "@/lib/queries";
-import { Card, CardTitle, Badge, DataTable, DataTableRow, EmptyState, MandateBar } from "@/components/ui";
+import { Badge, Bilingual, EmptyState, PageHeader, Panel, RowLink, Table, Td, Th, Tr, buttonClass } from "@/components/ui";
 import { NeedsAttentionCard } from "@/components/dashboard/NeedsAttentionCard";
+import { MandateBreakdown } from "@/components/dashboard/MandateBreakdown";
 import { formatCurrency, formatDate } from "@/utils";
 import type { SubmissionDaySummary } from "@/types";
 
@@ -19,101 +21,146 @@ const SUBMISSION_STATUS: Record<SubmissionDaySummary["status"], { label: string;
   all_failed: { label: "All failed", variant: "danger" },
 };
 
-const CHARGES_GRID = "minmax(0,2fr) minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)";
-const SUBMISSIONS_GRID = "minmax(0,1.2fr) minmax(0,0.9fr) minmax(0,1fr) minmax(0,0.9fr) minmax(0,1.4fr)";
-
 export default async function BillingPage() {
   const gym = await getGym();
-  const [upcomingCharges, recentSubmissions, mandateSummary, failedPaymentAlerts] = await Promise.all([
+  const [upcoming, submissions, mandates, alerts, collected] = await Promise.all([
     getUpcomingCharges(gym.id),
     getRecentSubmissions(gym.id),
     getMandateSummary(gym.id),
     getFailedPaymentAlerts(gym.id),
+    getCollectedThisMonth(gym.id),
   ]);
 
-  const nextCharge = upcomingCharges[0] ?? null;
+  const nextDate = upcoming[0]?.chargeDate;
+  const nextBatch = upcoming.filter((charge) => charge.chargeDate === nextDate);
+  const collectedTotal = collected.reduce((sum, payment) => sum + payment.amount, 0);
+  const upcomingTotal = upcoming.reduce((sum, charge) => sum + charge.amount, 0);
 
   return (
     <div>
-      <div className="mb-[22px]">
-        <h1 className="text-xl font-medium">
-          {nextCharge
-            ? `Next charge due ${formatDate(nextCharge.chargeDate, { weekday: "long", day: "numeric", month: "short" })}`
-            : "No upcoming charges"}
-        </h1>
-        <p className="text-[13px] text-[#8f978f] mt-[3px]">
-          {nextCharge ? `${nextCharge.memberName} · ${formatCurrency(nextCharge.amount)}` : "Nothing due in the next 14 days."}
-        </p>
-      </div>
+      <PageHeader
+        eyebrow={<Bilingual reo="Utu" en="Billing" />}
+        title={
+          nextDate
+            ? `${formatCurrency(nextBatch.reduce((sum, charge) => sum + charge.amount, 0))} goes out ${formatDate(nextDate, { weekday: "long", day: "numeric", month: "long" })}.`
+            : "No charges due in the next 14 days."
+        }
+        lede={nextDate ? `${nextBatch.length} ${nextBatch.length === 1 ? "member" : "members"} on the next run.` : undefined}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr] gap-3 items-start">
-        <Card>
-          <CardTitle description="By member, all time">Mandate status</CardTitle>
-          <MandateBar summary={mandateSummary} />
-        </Card>
+      <div className="seams enter grid-cols-1 lg:grid-cols-12">
+        <Panel title="Direct debit status" meta={`${mandates.total} members`} className="lg:col-span-4">
+          <MandateBreakdown summary={mandates} />
+        </Panel>
 
-        <NeedsAttentionCard alerts={failedPaymentAlerts} gymId={gym.id} />
-      </div>
+        <NeedsAttentionCard alerts={alerts} gymId={gym.id} className="lg:col-span-8" />
 
-      <div className="mt-5">
-        <h2 className="text-[15px] font-medium mb-3">Next charges due</h2>
-        {upcomingCharges.length === 0 ? (
-          <div className="bg-[#111412] border border-[#1f2420] rounded-[10px]">
+        <Panel id="due" title="Next charges" meta={upcoming.length > 0 ? `${formatCurrency(upcomingTotal)} over 14 days` : undefined} className="lg:col-span-12">
+          {upcoming.length === 0 ? (
             <EmptyState title={{ en: "No charges due in the next 14 days" }} />
-          </div>
-        ) : (
-          <DataTable gridTemplateColumns={CHARGES_GRID} minWidth={520} headers={["Member", "Plan", "Amount", "Charge date"]}>
-            {upcomingCharges.map((charge) => (
-              <DataTableRow
-                key={`${charge.memberId}-${charge.chargeDate}`}
-                gridTemplateColumns={CHARGES_GRID}
-                href={`/dashboard/members/${charge.memberId}`}
-              >
-                <div className="text-[13px] font-medium truncate">{charge.memberName}</div>
-                <div className="text-[13px] text-[#b9c0ba] truncate">{charge.planName}</div>
-                <div className="text-[13px] tabular-nums">{formatCurrency(charge.amount)}</div>
-                <div className="text-[13px] text-[#b9c0ba] tabular-nums">
-                  {formatDate(charge.chargeDate, { day: "numeric", month: "short" })}
-                </div>
-              </DataTableRow>
-            ))}
-          </DataTable>
-        )}
-      </div>
+          ) : (
+            <Table caption="Next charges due" minWidth={520}>
+              <thead>
+                <tr>
+                  <Th>Date</Th>
+                  <Th>Member</Th>
+                  <Th>Plan</Th>
+                  <Th align="right">Amount</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcoming.map((charge) => (
+                  <Tr key={`${charge.memberId}-${charge.chargeDate}`} clickable>
+                    <Td className="label whitespace-nowrap">{formatDate(charge.chargeDate, { day: "numeric", month: "short" })}</Td>
+                    <Td><RowLink href={`/dashboard/members/${charge.memberId}`}>{charge.memberName}</RowLink></Td>
+                    <Td className="text-fg-2 text-[13px]">{charge.planName}</Td>
+                    <Td align="right">{formatCurrency(charge.amount)}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </Panel>
 
-      <div className="mt-5">
-        <h2 className="text-[15px] font-medium mb-3">Recent submissions</h2>
-        <p className="text-xs text-[#646c66] -mt-2 mb-3">
-          Grouped from recorded payments by charge date — not a direct GoCardless batch report.
-        </p>
-        {recentSubmissions.length === 0 ? (
-          <div className="bg-[#111412] border border-[#1f2420] rounded-[10px]">
+        <Panel
+          id="collected"
+          title="Collected this month"
+          meta={`${collected.length} payments`}
+          action={
+            collected.length > 0 ? (
+              <a href="/dashboard/billing/export" download className={buttonClass("secondary", "sm")}>Export CSV</a>
+            ) : undefined
+          }
+          className="lg:col-span-12"
+        >
+          {collected.length === 0 ? (
+            <EmptyState title={{ en: "Nothing collected yet this month" }} />
+          ) : (
+            <Table caption="Payments collected this month" minWidth={600}>
+              <thead>
+                <tr>
+                  <Th>Date</Th>
+                  <Th>Member</Th>
+                  <Th>Method</Th>
+                  <Th>Note</Th>
+                  <Th align="right">Amount</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {collected.map((payment) => (
+                  <Tr key={payment.id} clickable={!!payment.memberId}>
+                    <Td className="label whitespace-nowrap">{formatDate(payment.paidAt, { day: "numeric", month: "short" })}</Td>
+                    <Td>
+                      {payment.memberId ? <RowLink href={`/dashboard/members/${payment.memberId}`}>{payment.memberName}</RowLink> : payment.memberName}
+                    </Td>
+                    <Td className="text-fg-2 text-[13px]">{payment.provider === "gocardless" ? "Direct debit" : "Manual"}</Td>
+                    <Td className="text-fg-3 text-[13px]">{payment.note ?? "—"}</Td>
+                    <Td align="right">{formatCurrency(payment.amount)}</Td>
+                  </Tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row" colSpan={4} className="label font-normal text-left px-4 py-3 border-t border-line-strong">Total</th>
+                  <td className="px-4 py-3 border-t border-line-strong text-right tabular-nums" data-collected-total>{formatCurrency(collectedTotal)}</td>
+                </tr>
+              </tfoot>
+            </Table>
+          )}
+        </Panel>
+
+        <Panel title="Collection days" meta="Last 14 days" className="lg:col-span-12">
+          <p className="text-xs text-fg-3 px-4 pt-3">Grouped from recorded payments by charge date, not a GoCardless batch report.</p>
+          {submissions.length === 0 ? (
             <EmptyState title={{ en: "No submissions in the last 14 days" }} />
-          </div>
-        ) : (
-          <DataTable
-            gridTemplateColumns={SUBMISSIONS_GRID}
-            minWidth={560}
-            headers={["Date", "Charges", "Succeeded", "Failed", "Status"]}
-          >
-            {recentSubmissions.map((day) => {
-              const status = SUBMISSION_STATUS[day.status];
-              return (
-                <DataTableRow key={day.date} gridTemplateColumns={SUBMISSIONS_GRID}>
-                  <div className="text-[13px] tabular-nums">{formatDate(day.date, { day: "numeric", month: "short" })}</div>
-                  <div className="text-[13px] tabular-nums">{day.chargeCount}</div>
-                  <div className="text-[13px] tabular-nums">
-                    {day.succeededCount} · {formatCurrency(day.succeededValue)}
-                  </div>
-                  <div className="text-[13px] tabular-nums">{day.failedCount}</div>
-                  <div>
-                    <Badge variant={status.variant} dot>{status.label}</Badge>
-                  </div>
-                </DataTableRow>
-              );
-            })}
-          </DataTable>
-        )}
+          ) : (
+            <Table caption="Collection days in the last 14 days" minWidth={560}>
+              <thead>
+                <tr>
+                  <Th>Date</Th>
+                  <Th>Charges</Th>
+                  <Th>Failed</Th>
+                  <Th>Result</Th>
+                  <Th align="right">Collected</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {submissions.map((day) => {
+                  const status = SUBMISSION_STATUS[day.status];
+                  return (
+                    <Tr key={day.date}>
+                      <Td className="label whitespace-nowrap">{formatDate(day.date, { day: "numeric", month: "short" })}</Td>
+                      <Td className="tabular-nums">{day.chargeCount}</Td>
+                      <Td className="tabular-nums">{day.failedCount}</Td>
+                      <Td><Badge variant={status.variant}>{status.label}</Badge></Td>
+                      <Td align="right">{formatCurrency(day.succeededValue)}</Td>
+                    </Tr>
+                  );
+                })}
+              </tbody>
+            </Table>
+          )}
+        </Panel>
       </div>
     </div>
   );

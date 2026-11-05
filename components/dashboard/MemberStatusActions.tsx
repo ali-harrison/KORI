@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
-import { ConfirmModal } from "@/components/ui/Modal";
+import { Badge, Button, ConfirmDialog } from "@/components/ui";
 import { updateMemberStatus, cancelMember } from "@/app/actions/members";
 import { MANDATE_STATE_LABEL, MANDATE_STATE_VARIANT } from "@/utils";
 import type { MemberStatus, MandateBadgeState } from "@/types";
@@ -48,7 +46,7 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
   // that's unresolved: another click here could double-fire the cancel
   // call, and none of these actions make sense mid-teardown.
   if (mandateState === "cancelling") {
-    return <Badge variant={MANDATE_STATE_VARIANT.cancelling} dot>{MANDATE_STATE_LABEL.cancelling}</Badge>;
+    return <Badge variant={MANDATE_STATE_VARIANT.cancelling}>{MANDATE_STATE_LABEL.cancelling}</Badge>;
   }
 
   const hasLiveMandate = mandateState === "active" || mandateState === "pending" || mandateState === "on_hold";
@@ -82,7 +80,7 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
 
       {/* Pausing only changes our own status — it doesn't touch GoCardless, so
           this must never promise that charges stop. */}
-      <ConfirmModal
+      <ConfirmDialog
         open={showConfirm === "pause"}
         onClose={closeConfirm}
         onConfirm={handleConfirm}
@@ -97,7 +95,7 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
         variant="primary"
         error={error}
       />
-      <ConfirmModal
+      <ConfirmDialog
         open={showConfirm === "cancel"}
         onClose={closeConfirm}
         onConfirm={handleConfirm}
@@ -112,7 +110,7 @@ export function MemberStatusActions({ memberId, gymId, currentStatus, mandateSta
         variant="danger"
         error={error}
       />
-      <ConfirmModal
+      <ConfirmDialog
         open={showConfirm === "activate"}
         onClose={closeConfirm}
         onConfirm={handleConfirm}

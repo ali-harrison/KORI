@@ -198,6 +198,27 @@ export interface MandateSummary {
   total: number;
 }
 
+// Cumulative money collected per day, this month and last, for the Overview
+// chart. current has one entry per day so far; previous runs the whole month.
+export interface RevenueSeries {
+  current: number[];
+  previous: number[];
+  daysInMonth: number;
+  currentLabel: string;
+  previousLabel: string;
+}
+
+// One row behind the "Collected this month" figure.
+export interface CollectedPayment {
+  id: string;
+  memberId: string | null;
+  memberName: string;
+  amount: number;
+  paidAt: string;
+  provider: PaymentProvider;
+  note: string | null;
+}
+
 // Overview page's "recent activity" feed — derived by merging recent
 // payments and recent member signups (no activity-log table exists). See
 // getRecentActivity in lib/queries.ts.

@@ -2,38 +2,44 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { Card, Badge, EmptyState } from "@/components/ui";
+import { Button, EmptyState, Panel, buttonClass } from "@/components/ui";
+import { RecordPaymentDialog } from "@/components/dashboard/RecordPaymentDialog";
 import { sendOverdueReminder } from "@/app/actions/reminders";
-import { formatCurrency, formatDate } from "@/utils";
+import { cn, formatCurrency, formatDate } from "@/utils";
 import type { FailedPaymentAlert } from "@/types";
 
 interface Props {
   alerts: FailedPaymentAlert[];
   gymId: string;
+  className?: string;
 }
 
-// Shared by the Overview and Billing pages, which previously duplicated
-// this block byte-for-byte. Each row is a flex div rather than a whole-row
-// <a> (the old shape) since a <button> can't nest inside an <a> — "View"
-// and "Send reminder" are now separate, sibling controls.
-export function NeedsAttentionCard({ alerts, gymId }: Props) {
+// Everything needed to fix a failed payment is on the row, so recovering one
+// never means leaving the page.
+export function NeedsAttentionCard({ alerts, gymId, className }: Props) {
+  const total = alerts.reduce((sum, alert) => sum + alert.amount, 0);
+
   return (
-    <Card padding="none">
-      <div className="flex items-center gap-2 px-[18px] py-3.5">
-        <span className="text-[13px] font-medium">Needs attention</span>
-        {alerts.length > 0 && <Badge variant="danger">{alerts.length}</Badge>}
-      </div>
+    <Panel
+      id="attention"
+      title="Needs attention"
+      meta={alerts.length > 0 ? `${alerts.length} / ${formatCurrency(total)}` : undefined}
+      className={className}
+    >
       {alerts.length > 0 ? (
-        alerts.map((alert) => <AlertRow key={alert.id} alert={alert} gymId={gymId} />)
+        <ul>
+          {alerts.map((alert) => <AlertRow key={alert.id} alert={alert} gymId={gymId} />)}
+        </ul>
       ) : (
-        <EmptyState title={{ en: "All payments up to date" }} className="py-8" />
+        <EmptyState title={{ en: "All payments up to date" }} className="py-12" />
       )}
-    </Card>
+    </Panel>
   );
 }
 
 function AlertRow({ alert, gymId }: { alert: FailedPaymentAlert; gymId: string }) {
   const [notice, setNotice] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [recording, setRecording] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function handleSendReminder() {
@@ -51,36 +57,39 @@ function AlertRow({ alert, gymId }: { alert: FailedPaymentAlert; gymId: string }
   }
 
   return (
-    <div className="flex items-start gap-3 px-[18px] py-3 border-t border-[#191e1a]">
-      <span className="w-[7px] h-[7px] rounded-full bg-[#cf7263] mt-[5px] flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-medium">Payment failed — {alert.memberName}</div>
-        <div className="text-xs text-[#8f978f] mt-[2px] text-pretty">
-          {formatCurrency(alert.amount)} charge failed on {formatDate(alert.failedAt, { day: "numeric", month: "short" })}.
-        </div>
-        {notice && (
-          <div className={`text-xs mt-1 ${notice.type === "success" ? "text-[#5fc9a4]" : "text-[#cf9a90]"}`}>
-            {notice.message}
-          </div>
-        )}
+    <li className="px-4 py-3.5 border-b border-line last:border-b-0">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="min-w-0">
+          <span aria-hidden className="inline-block size-1.5 bg-accent align-middle mr-2 -mt-0.5" />
+          Payment failed — {alert.memberName}
+        </p>
+        <p className="tabular-nums flex-shrink-0">{formatCurrency(alert.amount)}</p>
       </div>
-      <div className="flex items-center gap-3 flex-shrink-0 mt-[1px]">
-        {alert.memberId && (
-          <button
-            onClick={handleSendReminder}
-            disabled={isPending || !alert.memberEmail}
-            className="text-xs text-[#8f978f] hover:text-[#e7eae8] transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+      <p className="label mt-1 ml-3.5">Failed {formatDate(alert.failedAt, { day: "numeric", month: "short" })}</p>
+
+      {alert.memberId && (
+        <div className="flex flex-wrap items-center gap-2 mt-3 ml-3.5">
+          <Button variant="secondary" size="sm" onClick={handleSendReminder} disabled={isPending || !alert.memberEmail}>
             {isPending ? "Sending…" : "Send reminder"}
-          </button>
-        )}
-        <Link
-          href={alert.memberId ? `/dashboard/members/${alert.memberId}` : "/dashboard/members"}
-          className="text-xs text-[var(--accent)]"
-        >
-          View
-        </Link>
-      </div>
-    </div>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setRecording(true)}>Record payment</Button>
+          <Link href={`/dashboard/members/${alert.memberId}`} className={buttonClass("ghost", "sm")}>View</Link>
+        </div>
+      )}
+      {notice && (
+        <p role="status" className={cn("text-xs mt-2 ml-3.5", notice.type === "success" ? "text-ok" : "text-accent")}>{notice.message}</p>
+      )}
+
+      {alert.memberId && (
+        <RecordPaymentDialog
+          open={recording}
+          onClose={() => setRecording(false)}
+          memberId={alert.memberId}
+          gymId={gymId}
+          memberName={alert.memberName}
+          defaultAmount={alert.amount}
+        />
+      )}
+    </li>
   );
 }

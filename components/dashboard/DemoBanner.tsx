@@ -8,15 +8,15 @@ export function DemoBanner() {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <div className="flex-shrink-0 flex items-center justify-between gap-3 px-4 sm:px-7 py-1.5 text-xs text-[#cba55e] bg-[rgba(203,165,94,0.07)] border-b border-[rgba(203,165,94,0.16)]">
-      <span className="min-w-0 truncate">Demo mode — sample data, no real emails or payments.</span>
+    <aside aria-label="Demo notice" className="flex-shrink-0 flex items-center justify-between gap-3 px-4 sm:px-8 py-1.5 border-b border-line bg-sunken">
+      <p className="label min-w-0 truncate">Demo / sample data / no real emails or payments</p>
       <button
         onClick={() => startTransition(() => resetDemo())}
         disabled={isPending}
-        className="flex-shrink-0 underline underline-offset-2 hover:text-[#e7eae8] transition-colors duration-150 disabled:opacity-50"
+        className="label flex-shrink-0 underline underline-offset-2 hover:text-fg transition-colors duration-150 disabled:opacity-50 cursor-pointer"
       >
         {isPending ? "Resetting…" : "Reset demo"}
       </button>
-    </div>
+    </aside>
   );
 }

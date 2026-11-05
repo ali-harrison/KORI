@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Wordmark } from "@/components/ui/Wordmark";
+import { Button, Input, Wordmark } from "@/components/ui";
 import { createGym } from "@/app/actions/gym";
 
 export default function OnboardingPage() {
@@ -23,17 +21,14 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-[#0b0d0c] flex items-center justify-center p-6">
+    <main className="min-h-dvh flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        <div className="mb-10">
-          <Wordmark />
-          <div className="text-[11px] text-[#59615b] mt-0.5">gym operations</div>
-        </div>
+        <Wordmark className="block mb-10" />
 
         <div className="space-y-6">
-          <div className="space-y-1">
-            <h1 className="text-xl font-medium text-[#e7eae8]">Set up your gym</h1>
-            <p className="text-sm text-[#8f978f]">Tell us about your gym to get started.</p>
+          <div className="space-y-2">
+            <h1 className="text-3xl tracking-[-0.03em]">Set up your gym</h1>
+            <p className="text-fg-2">Tell us about your gym to get started.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -51,26 +46,15 @@ export default function OnboardingPage() {
               <Input label="Phone" name="phone" type="tel" placeholder="+64 21 555 0100" />
               <Input label="Gym email" name="email" type="email" placeholder="hello@example.com" />
             </div>
-            {error && <p className="text-xs text-[#cf7263]">{error}</p>}
-            <div className="pt-2">
-              <Button
-                variant="primary"
-                size="lg"
-                className="w-full"
-                type="submit"
-                loading={isPending}
-                disabled={!name.trim()}
-              >
-                Create gym
-              </Button>
-            </div>
+            {error && <p role="alert" className="text-accent text-[13px]">{error}</p>}
+            <Button variant="primary" size="lg" className="w-full" type="submit" loading={isPending} disabled={!name.trim()}>
+              Create gym
+            </Button>
           </form>
 
-          <p className="text-xs text-[#646c66] text-center">
-            You can update these details anytime in Settings.
-          </p>
+          <p className="text-xs text-fg-3">You can update these details anytime in Settings.</p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
